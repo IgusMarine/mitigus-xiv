@@ -1,0 +1,4 @@
+# Engine Windows do Mitigus XIV
+# pydivert 3.1.x empacota o WinDivert.dll + WinDivert64.sys (driver assinado) e
+# instala o driver no primeiro open(). Importa limpo no Python 3.14.
+pydivert>=3.1.3

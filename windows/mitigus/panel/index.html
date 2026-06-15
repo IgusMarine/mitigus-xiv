@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1620">
+<title>Mitigus XIV</title>
+<style>
+  @font-face{font-family:"Chakra Petch";font-style:normal;font-weight:400;font-display:swap;
+    src:url("/fonts/chakra-petch-latin-400-normal.woff2") format("woff2")}
+  @font-face{font-family:"Chakra Petch";font-style:normal;font-weight:500;font-display:swap;
+    src:url("/fonts/chakra-petch-latin-500-normal.woff2") format("woff2")}
+  @font-face{font-family:"Chakra Petch";font-style:normal;font-weight:600;font-display:swap;
+    src:url("/fonts/chakra-petch-latin-600-normal.woff2") format("woff2")}
+  @font-face{font-family:"Chakra Petch";font-style:normal;font-weight:700;font-display:swap;
+    src:url("/fonts/chakra-petch-latin-700-normal.woff2") format("woff2")}
+  :root{
+    --bg:oklch(0.15 0.02 245);
+    --surface:oklch(0.19 0.024 245);
+    --card:oklch(0.225 0.026 245);
+    --line:oklch(0.32 0.03 245);
+    --line-soft:oklch(0.27 0.028 245);
+    --txt:oklch(0.96 0.01 230);
+    --muted:oklch(0.72 0.02 235);
+    --faint:oklch(0.56 0.022 238);
+    --cyan:oklch(0.82 0.12 210);
+    --cyan-dim:oklch(0.62 0.10 215);
+    --purple:oklch(0.74 0.15 318);
+    --purple-dim:oklch(0.60 0.13 318);
+    --on:oklch(0.80 0.14 165);
+    --warn:oklch(0.84 0.13 80);
+    --bad:oklch(0.70 0.17 22);
+    --glow:oklch(0.82 0.12 210 / .35);
+    --r:18px; --r2:13px; --r3:9px;
+    --font-display:"Chakra Petch","Bahnschrift","Segoe UI Variable Display","Segoe UI",system-ui,sans-serif;
+    --font-mono:ui-monospace,"Cascadia Mono","Consolas",monospace;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%}
+  body{
+    background:
+      radial-gradient(120% 55% at 50% -8%, oklch(0.82 0.12 210 / .10), transparent 55%),
+      radial-gradient(90% 50% at 100% 108%, oklch(0.74 0.15 318 / .07), transparent 55%),
+      var(--bg);
+    color:var(--txt);font-family:var(--font-display);
+    display:flex;flex-direction:column;
+    font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;line-height:1.5}
+  svg.i{display:block;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+
+  /* ── barra de título própria ── */
+  .tbar{height:48px;flex:0 0 auto;display:flex;align-items:center;z-index:50;
+    background:oklch(0.20 0.028 232 / .72);backdrop-filter:blur(14px);
+    border-bottom:1px solid oklch(0.85 0.08 220 / .16);user-select:none}
+  .tb-left{display:flex;align-items:center;gap:9px;padding:0 14px;height:100%}
+  html.is-app .tb-left{cursor:move}
+  .tb-brand{width:24px;height:24px;display:grid;place-items:center;color:var(--cyan);
+    filter:drop-shadow(0 0 7px var(--glow))}
+  .tb-brand svg{width:20px;height:20px;stroke:currentColor;stroke-width:1.5;fill:none}
+  .tb-title{font-weight:700;letter-spacing:.16em;font-size:13px;color:oklch(0.88 0.1 205)}
+  .tb-tabs{flex:1;display:flex;justify-content:center;gap:2px;height:100%}
+  .tb-tab{position:relative;border:0;background:transparent;cursor:pointer;height:100%;
+    font-family:inherit;font-weight:600;font-size:13.5px;letter-spacing:.02em;
+    color:var(--faint);padding:0 18px;transition:color .18s}
+  .tb-tab:hover{color:var(--muted)}
+  .tb-tab.on{color:oklch(0.92 0.11 200)}
+  .tb-tab.on::after{content:"";position:absolute;left:14px;right:14px;bottom:0;height:2px;border-radius:2px;
+    background:var(--cyan);box-shadow:0 0 16px 1px var(--glow)}
+  .tb-tab .dot{position:absolute;top:11px;right:9px;width:6px;height:6px;border-radius:50%;
+    background:var(--warn);box-shadow:0 0 8px var(--warn);display:none}
+  .tb-tab.warn .dot{display:block}
+  .tb-btns{display:none;height:100%}
+  html.is-app .tb-btns{display:flex}
+  .tb-btn{width:46px;height:100%;border:0;background:transparent;color:oklch(0.82 0.02 220);
+    cursor:pointer;display:grid;place-items:center;transition:.15s}
+  .tb-btn svg{width:13px;height:13px;stroke:currentColor;stroke-width:1.7;fill:none}
+  .tb-btn:hover{background:oklch(0.30 0.04 222)}
+  .tb-close:hover{background:oklch(0.55 0.20 25);color:#fff}
+
+  /* ── conteúdo rolável ── */
+  .content{flex:1 1 auto;overflow-y:auto;overflow-x:hidden;padding:16px 16px 30px}
+  .wrap{max-width:548px;margin:0 auto}
+  .content::-webkit-scrollbar{width:9px}
+  .content::-webkit-scrollbar-thumb{background:oklch(0.3 0.02 245);border-radius:9px;border:2px solid var(--bg)}
+  .screen{display:none}
+  .screen.on{display:block;animation:fade .2s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+  /* ── banners ── */
+  .offline{display:none;align-items:center;gap:10px;margin-bottom:13px;padding:11px 14px;border-radius:var(--r2);
+    background:oklch(0.26 0.05 80 / .55);border:1px solid oklch(0.42 0.08 80);font-size:12.5px;color:oklch(0.92 0.06 85)}
+  .offline.show{display:flex}
+  .offline svg{width:16px;height:16px;flex:0 0 auto}
+  .reboot{display:none;align-items:center;gap:12px;margin-bottom:13px;padding:13px 15px;border-radius:var(--r2);
+    background:linear-gradient(150deg,oklch(0.32 0.08 80),oklch(0.24 0.05 65));border:1px solid oklch(0.5 0.1 80);
+    box-shadow:0 0 28px -12px oklch(0.84 0.13 80 / .6)}
+  .reboot.show{display:flex}
+  .reboot svg{width:22px;height:22px;color:var(--warn);flex:0 0 auto}
+  .reboot .tx{flex:1;font-size:12px;line-height:1.4;color:oklch(0.92 0.05 85)}
+  .reboot .tx b{display:block;font-size:13.5px;color:#fff;margin-bottom:1px}
+  .reboot button{flex:0 0 auto;background:var(--warn);color:oklch(0.2 0.04 70);border:0;font-family:inherit;
+    font-weight:700;font-size:12px;padding:9px 13px;border-radius:9px;cursor:pointer}
+
+  /* ── A1 status strip ── */
+  .statusbar{display:flex;align-items:center;gap:13px;padding:10px 14px;border-radius:var(--r2);
+    background:var(--surface);border:1px solid var(--line-soft);font-size:12.5px;color:var(--muted);margin-bottom:14px}
+  .statusbar .pill{display:flex;align-items:center;gap:7px;font-weight:600}
+  .statusbar .pdot{width:8px;height:8px;border-radius:50%;background:var(--on);box-shadow:0 0 9px var(--on);transition:.3s}
+  .statusbar .pdot.off{background:var(--faint);box-shadow:none}
+  .statusbar .sep{width:1px;height:16px;background:var(--line)}
+  .statusbar .gico{width:14px;height:14px;color:var(--on)}
+  .statusbar .gico.idle{color:var(--faint)}
+  .statusbar .srv{margin-left:auto;color:var(--faint);text-align:right}
+  .statusbar .srv b{color:var(--cyan);font-weight:600}
+
+  /* ── A2 hero ── */
+  .hero{position:relative;padding:23px 22px 21px;border-radius:var(--r);overflow:hidden;margin-bottom:14px;transition:opacity .3s;
+    background:radial-gradient(120% 90% at 50% 0%, oklch(0.82 0.12 210 / .10), transparent 60%),oklch(0.20 0.024 246 / .6);
+    backdrop-filter:blur(8px);border:1px solid oklch(0.5 0.06 215 / .28);
+    box-shadow:0 0 0 1px oklch(0.82 0.12 210 / .08), 0 20px 50px -28px var(--glow)}
+  .hero.paused{opacity:.5;filter:grayscale(.6)}
+  .hero::before{content:"";position:absolute;top:-50px;right:-30px;width:160px;height:160px;pointer-events:none;
+    background:conic-gradient(from 210deg at 50% 50%, oklch(0.85 0.15 205 / .32), transparent 26%, oklch(0.74 0.16 318 / .24) 54%, transparent 80%);
+    clip-path:polygon(50% 0,100% 35%,78% 100%,22% 100%,0 35%);filter:blur(4px);opacity:.55}
+  .hero .lab{position:relative;font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.16em;
+    color:var(--faint);margin-bottom:12px;display:flex;align-items:center;gap:7px}
+  .hero .lab svg{width:13px;height:13px;color:var(--cyan-dim)}
+  .hero .row{position:relative;display:flex;align-items:baseline;gap:13px}
+  .hero .o{font-size:17px;font-weight:500;color:var(--faint);text-decoration:line-through;
+    text-decoration-thickness:2px;text-decoration-color:oklch(0.5 0.02 240)}
+  .hero .n{font-size:62px;font-weight:700;letter-spacing:-.02em;line-height:.9;color:var(--cyan);
+    text-shadow:0 0 30px var(--glow);transition:transform .22s cubic-bezier(.2,.8,.2,1)}
+  .hero .n small{font-size:21px;font-weight:500;color:var(--cyan-dim);text-shadow:none}
+  .hero.flash .n{transform:scale(1.06)}
+  .hero .chip{position:relative;display:none;align-items:center;gap:6px;margin-top:14px;
+    font-size:12.5px;font-weight:600;color:oklch(0.16 0.04 165);background:var(--on);padding:5px 12px;border-radius:999px}
+  .hero .chip svg{width:13px;height:13px}
+  .hero .cap{position:relative;display:block;margin-top:12px;font-size:13px;color:var(--muted);line-height:1.5}
+  .hero .empty{position:relative;text-align:center;padding:8px 0 4px}
+  .hero .empty svg{width:30px;height:30px;color:var(--cyan-dim);margin:0 auto 10px}
+  .hero .empty b{display:block;font-size:16px;font-weight:600;margin-bottom:3px}
+  .hero .empty span{font-size:13.5px;color:var(--muted)}
+
+  /* ── A3 ping HUD ── */
+  .sec-cap{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.16em;color:var(--faint);
+    margin:18px 2px 10px;display:flex;align-items:center;gap:8px}
+  .sec-cap::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
+  .pings{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+  .pcard{position:relative;padding:15px 15px 16px;border-radius:var(--r2);background:var(--card);border:1px solid var(--line-soft)}
+  .pcard.net{border-color:oklch(0.5 0.07 215 / .35)}
+  .pcard.game{border-color:oklch(0.5 0.1 318 / .35)}
+  .pc-h{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:600;text-transform:uppercase;
+    letter-spacing:.1em;color:var(--muted);margin-bottom:9px}
+  .pc-h svg{width:15px;height:15px}
+  .net .pc-h svg{color:var(--cyan)} .game .pc-h svg{color:var(--purple)}
+  .pc-h .q{margin-left:auto;width:17px;height:17px;border-radius:50%;border:1px solid var(--line);
+    display:grid;place-items:center;font-size:10px;font-weight:700;color:var(--faint);cursor:pointer;background:var(--surface)}
+  .pc-h .q:hover{color:var(--cyan);border-color:var(--cyan-dim)}
+  .pc-big{font-size:37px;font-weight:700;line-height:1;letter-spacing:-.01em}
+  .pc-big small{font-size:15px;font-weight:500;color:var(--faint)}
+  .net .pc-big{color:var(--cyan)} .game .pc-big{color:var(--purple)}
+  .pc-sub{font-size:11.5px;color:var(--faint);margin-top:5px;letter-spacing:.02em}
+  .pc-foot{display:flex;gap:10px;margin-top:11px;padding-top:10px;border-top:1px solid var(--line-soft);font-size:11px}
+  .pc-foot .m{flex:1}
+  .pc-foot .m b{display:block;font-size:14px;font-weight:600;color:var(--txt)}
+  .pc-foot .m b.good{color:var(--on)} .pc-foot .m b.warn{color:var(--warn)} .pc-foot .m b.bad{color:var(--bad)}
+  .pc-foot .m span{color:var(--faint)}
+
+  .connector{display:flex;gap:9px;align-items:flex-start;margin:11px 2px 2px;font-size:12px;line-height:1.5;color:var(--muted)}
+  .connector svg{width:15px;height:15px;color:var(--cyan-dim);flex:0 0 auto;margin-top:1px}
+  .connector b{color:var(--cyan);font-weight:600}
+  .explain{display:none;margin-top:10px;padding:13px 15px;border-radius:var(--r2);font-size:12.5px;line-height:1.6;
+    color:var(--muted);background:oklch(0.18 0.02 250 / .7);border:1px solid var(--line-soft)}
+  .explain.on{display:block}
+  .explain b{color:var(--txt);font-weight:600}
+  .explain code{font-family:var(--font-mono);font-size:11.5px;color:var(--cyan);background:oklch(0.24 0.03 230);padding:1px 5px;border-radius:4px}
+
+  .sparkwrap{margin-top:12px}
+  .sparkwrap canvas{width:100%;height:50px;display:block;border-radius:var(--r3);
+    background:oklch(0.16 0.018 245);border:1px solid var(--line-soft)}
+  .losslabel{font-size:11.5px;margin-top:8px;display:flex;align-items:center;gap:6px;color:var(--on)}
+  .losslabel.warn{color:var(--warn)} .losslabel.bad{color:var(--bad)}
+  .losslabel svg{width:13px;height:13px}
+
+  /* ── A4 counters ── */
+  .counters{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:16px}
+  .counter{padding:14px 16px;border-radius:var(--r2);background:var(--surface);border:1px solid var(--line-soft)}
+  .counter .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--faint);display:flex;align-items:center;gap:6px}
+  .counter .k svg{width:13px;height:13px;color:var(--cyan-dim)}
+  .counter .v{font-size:25px;font-weight:700;margin-top:5px}
+  .counter .v small{font-size:13px;color:var(--muted);font-weight:500}
+
+  /* ── A5 footer ── */
+  .pfoot{display:flex;align-items:center;gap:10px;margin-top:16px;padding:12px 14px;border-radius:var(--r2);
+    background:var(--surface);border:1px solid var(--line-soft);font-size:12.5px;color:var(--muted)}
+  .pfoot svg{width:16px;height:16px;color:var(--cyan);flex:0 0 auto}
+  .pfoot b{color:var(--cyan);font-weight:600;word-break:break-all}
+  .pfoot button{margin-left:auto;border:0;background:var(--cyan);color:oklch(0.16 0.03 230);font-family:inherit;
+    font-weight:600;font-size:11.5px;padding:6px 11px;border-radius:7px;cursor:pointer;flex:0 0 auto}
+  .pfoot button:active{transform:scale(.96)}
+
+  /* ── Configuração ── */
+  .block{background:var(--card);border:1px solid var(--line-soft);border-radius:var(--r2);padding:17px;margin-bottom:12px}
+  .block-h{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600;margin-bottom:13px}
+  .block-h svg{width:17px;height:17px;color:var(--cyan)}
+  .ctrl{display:flex;align-items:center;gap:13px;padding:13px 0;border-top:1px solid var(--line-soft)}
+  .ctrl:first-of-type{border-top:none;padding-top:2px}
+  .ctrl .txt{flex:1;min-width:0}
+  .ctrl .txt b{font-size:14px;font-weight:600;display:block}
+  .ctrl .txt small{font-size:12px;color:var(--muted);line-height:1.45;display:block;margin-top:2px}
+  .switch{width:50px;height:28px;border-radius:999px;position:relative;flex:0 0 auto;cursor:pointer;
+    background:oklch(0.27 0.02 245);border:1px solid var(--line);transition:.25s}
+  .switch.on{background:linear-gradient(90deg,var(--cyan-dim),var(--cyan));border-color:transparent;box-shadow:0 0 14px -3px var(--glow)}
+  .switch::after{content:"";position:absolute;top:2px;left:2px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.25s cubic-bezier(.2,.8,.2,1)}
+  .switch.on::after{left:24px}
+  .slider-wrap{padding:14px 0 4px;border-top:1px solid var(--line-soft)}
+  .slider-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:10px}
+  .slider-head .v{font-size:23px;font-weight:700}
+  .slider-head .v small{font-size:12px;color:var(--muted);font-weight:500}
+  .slider-head .tag{font-size:11px;font-weight:600;padding:4px 11px;border-radius:999px;color:var(--cyan);
+    background:var(--surface);border:1px solid var(--line-soft)}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:999px;
+    background:linear-gradient(90deg,var(--purple),var(--cyan));outline:none;margin:4px 0}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;
+    background:#fff;border:3px solid var(--bg);box-shadow:0 0 12px -2px var(--glow),0 2px 8px oklch(0 0 0 /.5);cursor:pointer}
+  input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid var(--bg);cursor:pointer}
+  .scalelbl{display:flex;justify-content:space-between;font-size:10.5px;color:var(--faint);margin-top:8px}
+  .hintbox{font-size:12.5px;color:var(--muted);margin-top:11px;line-height:1.55}
+  .hintbox b{color:var(--txt);font-weight:600}
+
+  .accord{border:1px solid var(--line-soft);border-radius:var(--r2);margin-bottom:12px;overflow:hidden;background:oklch(0.18 0.02 245 / .5)}
+  .accord-h{display:flex;align-items:center;gap:11px;padding:15px 16px;cursor:pointer;user-select:none}
+  .accord-h svg.lead{width:17px;height:17px;color:var(--cyan-dim);flex:0 0 auto}
+  .accord-h b{flex:1;font-size:14px;font-weight:600}
+  .accord-h .pill{font-size:10.5px;color:var(--faint);margin-right:4px}
+  .accord-h .pill.warn{color:var(--warn)}
+  .accord-h .chev{width:16px;height:16px;color:var(--faint);transition:.25s;flex:0 0 auto}
+  .accord.open .chev{transform:rotate(180deg)}
+  .accord-b{display:none;padding:2px 16px 16px}
+  .accord.open .accord-b{display:block}
+
+  .step{display:flex;gap:12px;padding:10px 0;border-top:1px solid var(--line-soft)}
+  .step:first-child{border-top:none}
+  .step .num{width:21px;height:21px;border-radius:7px;flex:0 0 auto;display:grid;place-items:center;
+    background:var(--surface);border:1px solid var(--line);font-size:11px;font-weight:700;color:var(--cyan)}
+  .step .t{font-size:13.5px;line-height:1.45}
+  .step .t b{font-weight:600}
+  .step .t small{display:block;color:var(--muted);font-size:12.5px}
+  .ipbox{display:flex;align-items:center;gap:10px;margin-top:8px;background:var(--bg);
+    border:1px solid var(--line);border-radius:8px;padding:7px 8px 7px 12px}
+  .ipbox code{font:600 15px/1 var(--font-mono);color:var(--cyan);letter-spacing:.5px}
+  .ipbox button{margin-left:auto;border:0;background:var(--cyan);color:oklch(0.16 0.03 230);font-family:inherit;
+    font-weight:600;font-size:11.5px;padding:6px 11px;border-radius:7px;cursor:pointer}
+
+  .check{display:flex;align-items:center;gap:11px;padding:11px 0;border-top:1px solid var(--line-soft)}
+  .check:first-child{border-top:none}
+  .check .cd{width:19px;height:19px;border-radius:6px;flex:0 0 auto;display:grid;place-items:center;font-size:11px;font-weight:700}
+  .check.ok .cd{background:oklch(0.3 0.08 165);color:var(--on)}
+  .check.wait .cd{background:oklch(0.32 0.07 80);color:var(--warn)}
+  .check.bad .cd{background:oklch(0.3 0.09 22);color:var(--bad)}
+  .check .lbl{flex:1;font-size:13.5px}
+  .check .st{font-size:12px;color:var(--muted)}
+  .check .mini{display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--line);
+    color:var(--cyan);font-family:inherit;font-size:11px;font-weight:600;padding:5px 9px;border-radius:7px;cursor:pointer}
+  .check .mini svg{width:13px;height:13px}
+  .check .mini:disabled{opacity:.55}
+  .warnbox{margin-top:9px;background:oklch(0.26 0.05 80 / .5);border:1px solid oklch(0.42 0.08 80);border-radius:9px;
+    padding:11px 13px;font-size:12px;color:oklch(0.9 0.07 85);line-height:1.5}
+  .warnbox b{color:#fff;font-weight:600;word-break:break-all}
+  .rfields{display:grid;grid-template-columns:1fr 80px;gap:8px;margin:11px 0}
+  .rfields input{background:var(--bg);border:1px solid var(--line);border-radius:8px;color:var(--txt);
+    padding:9px 11px;font-size:13px;font-family:inherit}
+  .rfields input:focus{outline:none;border-color:var(--cyan-dim)}
+  .btn-primary{border:0;background:var(--cyan);color:oklch(0.16 0.03 230);font-family:inherit;
+    font-weight:600;font-size:12.5px;padding:9px 14px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+  .btn-primary svg{width:14px;height:14px}
+  .btn-primary:active{transform:scale(.97)}
+  .log{background:var(--bg);border:1px solid var(--line-soft);border-radius:9px;padding:11px;
+    font:11.5px/1.7 var(--font-mono);color:oklch(0.78 0.04 230);height:150px;overflow:auto;white-space:pre-wrap;word-break:break-word}
+  .logpath{font-size:11px;color:var(--faint);margin-top:9px;word-break:break-all}
+  .logpath b{color:var(--cyan);font-weight:600}
+  .note{font-size:11px;color:var(--faint);text-align:center;margin-top:16px;line-height:1.6}
+  .note b{color:var(--warn)}
+</style>
+</head>
+<body>
+
+  <!-- ════ BARRA DE TÍTULO PRÓPRIA ════ -->
+  <div class="tbar">
+    <div class="tb-left pywebview-drag-region" id="tbDrag" title="arraste para mover">
+      <span class="tb-brand"><svg viewBox="0 0 24 24"><path d="M12 2 4 9l8 13 8-13-8-7Z"/><path d="M4 9h16M9.2 4.2 8 9l4 13M14.8 4.2 16 9l-4 13"/></svg></span>
+      <span class="tb-title">MITIGUS&nbsp;XIV</span>
+    </div>
+    <div class="tb-tabs">
+      <button class="tb-tab on" data-s="painel">Painel</button>
+      <button class="tb-tab" data-s="config" id="tabConfig">Configuração<span class="dot"></span></button>
+    </div>
+    <div class="tb-btns">
+      <button class="tb-btn" id="btnMin" title="Minimizar"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
+      <button class="tb-btn" id="btnMax" title="Maximizar"><svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"/></svg></button>
+      <button class="tb-btn tb-close" id="btnClose" title="Fechar (vai pra bandeja)"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
+  </div>
+
+  <div class="content">
+   <div class="wrap">
+
+    <div class="offline" id="offline">
+      <svg class="i" viewBox="0 0 24 24"><path d="M12 2v6M12 16v6M2 12h6M16 12h6"/></svg>
+      Sem conexão com o Mitigus. Tentando de novo…
+    </div>
+
+    <!-- ════════════ PAINEL (só informação) ════════════ -->
+    <div class="screen on" id="painel">
+
+      <div class="reboot" id="rebootBanner">
+        <svg class="i" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 2.6-6.3L3 8M3 3v5h5"/></svg>
+        <div class="tx"><b>Falta reiniciar o Windows</b>Reinicie 1x pro console aceitar o PC como gateway. Se já conecta, pode ignorar.</div>
+        <button onclick="doReboot()">Reiniciar</button>
+      </div>
+
+      <div class="statusbar">
+        <span class="pill" id="stMit"><span class="pdot" id="stMitDot"></span>Mitigando</span>
+        <span class="sep"></span>
+        <span class="pill" style="color:var(--muted)"><svg class="i gico idle" id="stGameIco" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="9" rx="4.5"/><path d="M7.5 12.5h2.5M8.75 11.25v2.5M16 12h.01M17.6 13.5h.01"/></svg><span id="stGame">aguardando</span></span>
+        <span class="srv" id="stSrv"></span>
+      </div>
+
+      <div class="hero" id="hero">
+        <div class="lab"><svg class="i" viewBox="0 0 24 24"><path d="M14 4 6 14h5l-1 6 8-10h-5l1-6Z"/></svg> Trava de animação · último corte</div>
+        <div class="row" id="heroRow">
+          <span class="o" id="heroO">—</span>
+          <span class="n" id="heroN">—<small>ms</small></span>
+        </div>
+        <span class="chip" id="heroChip"><svg class="i" viewBox="0 0 24 24"><path d="M5 12l5 5 9-11"/></svg> <span id="heroChipTxt">—</span></span>
+        <span class="cap" id="heroCap">Cada habilidade libera mais cedo — dá pra encaixar a próxima skill (double weave).</span>
+        <div class="empty" id="heroEmpty" style="display:none">
+          <svg class="i" viewBox="0 0 24 24"><path d="M14 4 6 14h5l-1 6 8-10h-5l1-6Z"/></svg>
+          <b id="heroEmptyT">Tudo pronto.</b><span id="heroEmptyS">Entre em combate para ver os cortes ao vivo.</span>
+        </div>
+      </div>
+
+      <div class="sec-cap">Latência</div>
+      <div class="pings">
+        <div class="pcard net">
+          <div class="pc-h"><svg class="i" viewBox="0 0 24 24"><path d="M5 13a10 10 0 0 1 14 0M8.5 16.5a5 5 0 0 1 7 0M12 20h.01"/></svg> Sua conexão</div>
+          <div class="pc-big" id="netBig">—<small>ms</small></div>
+          <div class="pc-sub" id="netSub">PC → servidor → PC</div>
+          <div class="pc-foot">
+            <div class="m"><b id="netMin">—</b><span>melhor caso</span></div>
+            <div class="m"><b id="netJit">—</b><span>estabilidade</span></div>
+          </div>
+        </div>
+        <div class="pcard game">
+          <div class="pc-h"><svg class="i" viewBox="0 0 24 24"><path d="M14 4 6 14h5l-1 6 8-10h-5l1-6Z"/></svg> Ping no jogo <span class="q" id="qbtn">?</span></div>
+          <div class="pc-big" id="gameBig">—<small>ms</small></div>
+          <div class="pc-sub">apertar → acontecer</div>
+          <div class="pc-foot">
+            <div class="m"><b id="gamePeak">—</b><span>picos</span></div>
+            <div class="m"><b style="color:var(--on)">normal</b><span>pra distância</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="connector">
+        <svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+        <span>O <b>ping no jogo</b> é maior porque inclui o tempo do servidor processar a habilidade. Os dois são ida-e-volta — você <b>não</b> soma um ao outro.</span>
+      </div>
+      <div class="explain" id="explain">
+        <b>Por que tenho dois números diferentes?</b><br>
+        A <code>Sua conexão</code> é só a sua internet: o tempo de ir até o servidor e voltar.
+        O <code>Ping no jogo</code> é maior porque inclui o tempo do servidor do FFXIV pensar e responder à sua ação — não é a sua internet ruim, é assim pra todo mundo.
+        O Mitigus trabalha em cima do <code>Ping no jogo</code>: desconta a parte da viagem de rede da trava de animação, e é por isso que você encaixa duas skills onde antes só cabia uma.
+      </div>
+
+      <div class="sparkwrap">
+        <canvas id="spark" width="520" height="50"></canvas>
+        <div class="losslabel" id="lossLabel"><svg class="i" viewBox="0 0 24 24"><path d="M5 12l5 5 9-11"/></svg> <span id="lossTxt">Perdas no último segundo: 0 — perfeito</span></div>
+      </div>
+
+      <div class="counters">
+        <div class="counter"><div class="k"><svg class="i" viewBox="0 0 24 24"><path d="M4 14 9 9l4 4 7-8"/></svg> Ações otimizadas</div><div class="v" id="cActs">0</div></div>
+        <div class="counter"><div class="k"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg> Tempo economizado</div><div class="v" id="cSaved">0<small>s</small></div></div>
+      </div>
+
+      <div class="pfoot" id="pfoot" style="display:none">
+        <svg class="i" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M11 18h2"/></svg>
+        <span>No celular (mesma rede): <b id="phoneUrl">—</b></span>
+        <button onclick="copyPhone(event)">Copiar</button>
+      </div>
+    </div>
+
+    <!-- ════════════ CONFIGURAÇÃO (ajustes + tutorial) ════════════ -->
+    <div class="screen" id="config">
+
+      <div class="block">
+        <div class="block-h"><svg class="i" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/></svg> Mitigação</div>
+        <div class="ctrl">
+          <div class="txt"><b id="mitLbl">Mitigação ligada</b><small id="mitSub">Cortando o atraso das habilidades em tempo real.</small></div>
+          <div class="switch on" id="swMit" onclick="toggleMit()"></div>
+        </div>
+        <div class="slider-wrap">
+          <div class="slider-head">
+            <div class="v"><span id="mval">75</span><small>ms de margem</small></div>
+            <div class="tag" id="mtag">recomendado</div>
+          </div>
+          <input type="range" min="60" max="150" step="5" value="75" id="margin" oninput="onMargin(this.value)" onchange="onMargin(this.value)">
+          <div class="scalelbl"><span>↑ resposta</span><span>equilíbrio</span><span>segurança ↑</span></div>
+          <div class="hintbox">Folga de segurança antes da próxima ação. <b>Menor</b> = ganho maior, porém arriscado. <b>75&nbsp;ms</b> é o recomendado.</div>
+        </div>
+        <div class="ctrl" style="border-top:1px solid var(--line-soft);margin-top:8px">
+          <div class="txt"><b>Anti-travamento (QoS)</b><small>Se algo no PC usar muita internet, prioriza o tráfego do jogo pra não engasgar.</small></div>
+          <div class="switch" id="swQos" onclick="toggleQos()"></div>
+        </div>
+      </div>
+
+      <div class="accord" id="accSetup">
+        <div class="accord-h" onclick="acc('accSetup')"><svg class="i lead" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="9" rx="4.5"/><path d="M7.5 12.5h2.5M8.75 11.25v2.5M16 12h.01M17.6 13.5h.01"/></svg><b>Como conectar o PS5</b><svg class="i chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></div>
+        <div class="accord-b">
+          <div class="step"><span class="num">1</span><div class="t">Ligue o PC e abra o Mitigus.<small>deixe rodando enquanto joga</small></div></div>
+          <div class="step"><span class="num">2</span><div class="t">No PS5: <b>Rede → Configurar Internet → Manual</b><small>aponte o <b>Gateway padrão</b> para este PC:</small>
+            <div class="ipbox"><code id="pcip2">—</code><button onclick="copyIp(event)">copiar</button></div></div></div>
+          <div class="step"><span class="num">3</span><div class="t">DNS primário <b>1.1.1.1</b>, salve e teste.<small>quando aparecer “Jogo ativo” no Painel, está funcionando</small></div></div>
+        </div>
+      </div>
+
+      <div class="accord open" id="accHealth">
+        <div class="accord-h" onclick="acc('accHealth')"><svg class="i lead" viewBox="0 0 24 24"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg><b>Status do sistema</b><svg class="i chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></div>
+        <div class="accord-b" id="checks">
+          <div class="check wait" data-k="admin"><span class="cd">!</span><span class="lbl">Administrador</span><span class="st">—</span></div>
+          <div class="check wait" data-k="routing"><span class="cd">!</span><span class="lbl">PC como roteador</span><span class="st">—</span></div>
+          <div class="check wait" data-k="oodle"><span class="cd">!</span><span class="lbl">Decodificador (ffxiv_dx11.exe)</span><span class="st">—</span></div>
+          <div class="check wait" data-k="opcodes"><span class="cd">!</span><span class="lbl">Opcodes do jogo</span><button class="mini" onclick="updateOpcodes(event)"><svg class="i" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 4v4h-4"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16M3 20v-4h4"/></svg>atualizar</button><span class="st">—</span></div>
+          <div class="check wait" data-k="ps5"><span class="cd">!</span><span class="lbl">PS5 conectado</span><span class="st">aguardando…</span></div>
+          <div class="warnbox" id="oodleHint" style="display:none"></div>
+        </div>
+      </div>
+
+      <div class="accord" id="accRoute">
+        <div class="accord-h" onclick="acc('accRoute')"><svg class="i lead" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 2.5 15 0 18M12 3c-2.5 2.5-2.5 15 0 18"/></svg><b>Rota avançada (VPS)</b><span class="pill" id="routePill">desligada</span><svg class="i chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></div>
+        <div class="accord-b">
+          <div class="warnbox" style="margin-top:10px"><b>Só mexa se você sabe o que é.</b> Manda o tráfego do jogo por um servidor seu (VPS) que pode ter rota melhor até o NA. Errar aqui derruba a conexão. Opcional — sem VPS, deixe desligada.</div>
+          <div class="ctrl" style="border-top:none"><div class="txt"><b>Usar rota por VPS (SOCKS5)</b></div><div class="switch" id="swRoute" onclick="toggleRoute()"></div></div>
+          <div class="rfields"><input type="text" id="routeHost" placeholder="IP ou host do VPS" autocomplete="off"><input type="number" id="routePort" placeholder="porta" value="1080"></div>
+          <button class="btn-primary" onclick="saveRoute()"><svg class="i" viewBox="0 0 24 24"><path d="M5 12l5 5 9-11"/></svg>salvar rota</button>
+        </div>
+      </div>
+
+      <div class="accord" id="accLog">
+        <div class="accord-h" onclick="acc('accLog')"><svg class="i lead" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg><b>Registro de eventos</b><svg class="i chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></div>
+        <div class="accord-b">
+          <div class="log" id="log">aguardando…</div>
+          <div class="logpath" id="logpath"></div>
+        </div>
+      </div>
+
+      <div class="note">Painel só na sua rede local. <b>Nunca</b> exponha esta porta à internet.<br>Ferramenta de mitigação de latência — uso por sua conta e risco.</div>
+    </div>
+
+   </div>
+  </div>
+
+<script>
+const $=id=>document.getElementById(id);
+const IS_APP=new URLSearchParams(location.search).has("app");
+document.documentElement.classList.toggle("is-app",IS_APP);
+let slidingUntil=0,lastN=null,routeInit=false;
+
+async function api(p,o){const r=await fetch(p,o);if(!r.ok)throw 0;return r.json()}
+function fmt(v){return (v===null||v===undefined)?"—":v}
+
+/* ── navegação ── */
+document.querySelectorAll(".tb-tab").forEach(t=>t.onclick=()=>{
+  document.querySelectorAll(".tb-tab").forEach(x=>x.classList.remove("on"));
+  document.querySelectorAll(".screen").forEach(x=>x.classList.remove("on"));
+  t.classList.add("on");$(t.dataset.s).classList.add("on");
+  document.querySelector(".content").scrollTop=0;
+});
+function acc(id){$(id).classList.toggle("open")}
+$("qbtn").onclick=()=>$("explain").classList.toggle("on");
+
+/* ── botões da janela (só no app) ── ligados incondicionalmente; a ponte
+   pywebview é resolvida no momento do clique (evita perder o pywebviewready). */
+function winApi(name){try{const a=window.pywebview&&window.pywebview.api;if(a&&a[name])a[name]();}catch(e){}}
+if(IS_APP){
+  $("btnMin").onclick=()=>winApi("minimize");
+  $("btnMax").onclick=()=>winApi("toggle_maximize");
+  $("btnClose").onclick=()=>winApi("hide_to_tray");
+  $("tbDrag").addEventListener("dblclick",()=>winApi("toggle_maximize"));
+}
+
+/* ── ações de configuração ── */
+async function toggleMit(){try{await api("/api/toggle",{method:"POST"});refresh()}catch(e){}}
+async function toggleQos(){const on=!$("swQos").classList.contains("on");
+  try{await api("/api/config?qos="+(on?1:0),{method:"POST"});refresh()}catch(e){}}
+function tag(ms){return ms<70?"agressivo":ms<=85?"recomendado":ms<=110?"seguro":"bem seguro"}
+function onMargin(v){slidingUntil=Date.now()+1600;$("mval").textContent=v;$("mtag").textContent=tag(+v);
+  clearTimeout(window._mt);window._mt=setTimeout(()=>{api("/api/config?extra_delay_ms="+v,{method:"POST"}).catch(()=>{})},180)}
+function toggleRoute(){$("swRoute").classList.toggle("on")}
+async function saveRoute(){const on=$("swRoute").classList.contains("on"),host=$("routeHost").value.trim(),port=$("routePort").value||1080;
+  const mode=on?"socks5":"off";
+  try{await api("/api/route?mode="+mode+"&host="+encodeURIComponent(host)+"&port="+encodeURIComponent(port),{method:"POST"})}catch(e){}refresh()}
+async function doReboot(){if(!confirm("Reiniciar o Windows agora? Salve seus arquivos antes."))return;
+  try{await api("/api/reboot",{method:"POST"});alert("O Windows vai reiniciar em 20 segundos.")}catch(e){}}
+async function updateOpcodes(e){e.stopPropagation();const b=e.currentTarget,old=b.innerHTML;b.textContent="…";b.disabled=true;
+  let ok=false;try{const r=await api("/api/opcodes/update",{method:"POST"});ok=r.ok!==false}catch(_){ok=false}
+  b.textContent=ok?"✓":"erro";setTimeout(()=>{b.innerHTML=old;b.disabled=false;refresh()},1300)}
+function copyIp(e){e.stopPropagation();const ip=$("pcip2").textContent;
+  if(ip&&ip!=="—"){navigator.clipboard&&navigator.clipboard.writeText(ip);const b=e.currentTarget,o=b.innerHTML;b.textContent="copiado!";setTimeout(()=>b.innerHTML=o,1200)}}
+function copyPhone(e){const u=$("phoneUrl").textContent;
+  if(u&&u!=="—"){navigator.clipboard&&navigator.clipboard.writeText(u);const b=e.currentTarget,o=b.textContent;b.textContent="copiado!";setTimeout(()=>b.textContent=o,1200)}}
+
+/* ── helpers de UI ── */
+function setCheck(k,state,txt){const el=document.querySelector('.check[data-k="'+k+'"]');if(!el)return;
+  el.classList.remove("ok","wait","bad");el.classList.add(state);
+  el.querySelector(".cd").textContent=state==="ok"?"✓":(state==="bad"?"✕":"!");
+  el.querySelector(".st").textContent=txt}
+function setClass(el,cls){el.classList.remove("good","warn","bad");if(cls)el.classList.add(cls)}
+
+function drawSpark(samples,color){const c=$("spark");if(!c)return;
+  const w=c.clientWidth||320,h=50;if(c.width!==w)c.width=w;if(c.height!==h)c.height=h;
+  const x=c.getContext("2d");x.clearRect(0,0,w,h);
+  if(!samples||samples.length<2)return;
+  const mn=Math.min(...samples),mx=Math.max(...samples),rng=(mx-mn)||1,pad=5,gw=w-pad*2,gh=h-pad*2;
+  const pt=i=>[pad+gw*i/(samples.length-1),pad+gh*(1-(samples[i]-mn)/rng)];
+  x.beginPath();samples.forEach((v,i)=>{const[px,py]=pt(i);i?x.lineTo(px,py):x.moveTo(px,py)});
+  x.lineTo(pad+gw,pad+gh);x.lineTo(pad,pad+gh);x.closePath();
+  const g=x.createLinearGradient(0,0,0,h);g.addColorStop(0,color+"33");g.addColorStop(1,color+"05");x.fillStyle=g;x.fill();
+  x.beginPath();samples.forEach((v,i)=>{const[px,py]=pt(i);i?x.lineTo(px,py):x.moveTo(px,py)});
+  x.strokeStyle=color;x.lineWidth=2;x.lineJoin="round";x.shadowColor=color;x.shadowBlur=6;x.stroke();x.shadowBlur=0}
+
+/* ── loop de atualização ── */
+async function refresh(){
+  try{
+    const s=await api("/api/status");const t=s.telemetry||{},info=s.info||{},pg=s.ping||{};
+    $("offline").classList.remove("show");
+
+    /* status strip */
+    $("stMitDot").classList.toggle("off",!s.enabled);
+    $("stMit").lastChild.textContent=s.enabled?"Mitigando":"Pausado";
+    const ga=info.game_active||0;
+    $("stGameIco").classList.toggle("idle",!(ga>0));
+    $("stGame").textContent=ga>0?"Jogo ativo":(s.flows>0?"jogo ocioso":"aguardando jogo");
+    $("stSrv").innerHTML=info.server_ip?("Servidor: <b>"+(info.server_region||"?")+"</b>"):"";
+
+    /* reboot / aba com aviso */
+    const needReboot=!!info.reboot_pending;
+    $("rebootBanner").classList.toggle("show",needReboot);
+    const opcodesBad=info.opcodes_count>0 && s.flows>0 && info.opcodes_matched===false;
+    const warnTab=needReboot||info.oodle_missing||opcodesBad;
+    $("tabConfig").classList.toggle("warn",warnTab);
+
+    /* hero */
+    const o=t.last_original_ms,n=t.last_reduced_ms,saved=t.last_saved_ms;
+    $("hero").classList.toggle("paused",!s.enabled);
+    if(o!==null&&o!==undefined){
+      $("heroRow").style.display="flex";$("heroEmpty").style.display="none";
+      $("heroCap").style.display="block";
+      $("heroN").innerHTML=fmt(n)+'<small>ms</small>';$("heroO").textContent=o+"ms";
+      if(saved>0){$("heroChip").style.display="inline-flex";$("heroChipTxt").textContent="−"+saved+" ms por ação";
+        $("heroCap").textContent="Cada habilidade libera ~"+saved+" ms mais cedo — dá pra encaixar a próxima skill (double weave).";}
+      else{$("heroChip").style.display="none";}
+      if(n!==lastN){$("hero").classList.add("flash");setTimeout(()=>$("hero").classList.remove("flash"),220);lastN=n;}
+    }else{
+      $("heroRow").style.display="none";$("heroChip").style.display="none";$("heroCap").style.display="none";
+      $("heroEmpty").style.display="block";
+      if(ga>0){$("heroEmptyT").textContent="Pronto pro combate.";$("heroEmptyS").textContent="Use uma habilidade para ver os cortes ao vivo.";}
+      else{$("heroEmptyT").textContent="Abra o FFXIV.";$("heroEmptyS").textContent="Quando o jogo conectar, os cortes aparecem aqui.";}
+    }
+
+    /* ── Sua conexão (rede) ── */
+    const wan=pg.wan_ms,wmin=pg.wan_min_ms,jit=pg.jitter_ms,retr=pg.retrans;
+    $("netBig").innerHTML=(wan!=null?Math.round(wan):"—")+'<small>ms</small>';
+    if(wan!=null&&wmin!=null&&(wan-wmin)>40){$("netSub").innerHTML='<span style="color:var(--warn)">oscilando agora</span>';}
+    else{$("netSub").textContent="PC → servidor → PC";}
+    $("netMin").innerHTML=(wmin!=null?Math.round(wmin):"—")+'<span style="font-size:11px">ms</span>';
+    const jel=$("netJit");
+    jel.innerHTML=(jit!=null?Math.round(jit):"—")+'<span style="font-size:11px">ms</span>';
+    let scol="#5cc8ee";
+    if(jit!=null){if(jit<=10){setClass(jel,"good");scol="#3ddc97";}else if(jit<=25){setClass(jel,"warn");scol="#f5c451";}else{setClass(jel,"bad");scol="#fb7185";}}
+    else setClass(jel,"");
+
+    /* sparkline + perda */
+    drawSpark(pg.samples,scol);
+    const ll=$("lossLabel");ll.classList.remove("warn","bad");
+    if(retr!=null&&retr>0){ll.classList.add(retr>=3?"bad":"warn");$("lossTxt").textContent="Perdas no último segundo: "+retr+" — tem perda na linha agora";}
+    else{$("lossTxt").textContent="Perdas no último segundo: 0 — perfeito";}
+
+    /* ── Ping no jogo ── */
+    const felt=pg.felt_p50_ms!=null?Math.round(pg.felt_p50_ms):(t.last_rtt_ms!=null?t.last_rtt_ms:null);
+    $("gameBig").innerHTML=(felt!=null?felt:"—")+'<small>ms</small>';
+    $("gamePeak").innerHTML=(pg.felt_p95_ms!=null?Math.round(pg.felt_p95_ms):"—")+'<span style="font-size:11px">ms</span>';
+
+    /* contadores */
+    $("cActs").textContent=(t.total_actions||0).toLocaleString("pt-BR");
+    const sv=(t.total_saved_ms||0)/1000;
+    $("cSaved").innerHTML=sv.toFixed(1).replace(".",",")+'<small>s</small>';
+
+    /* rodapé celular */
+    const pport=location.port||"8080";
+    if(info.pc_ip){$("pfoot").style.display="flex";$("phoneUrl").textContent="http://"+info.pc_ip+":"+pport;}
+
+    /* ── Configuração ── */
+    $("swMit").classList.toggle("on",s.enabled);
+    $("mitLbl").textContent=s.enabled?"Mitigação ligada":"Mitigação pausada";
+    $("mitSub").textContent=s.enabled?"Cortando o atraso das habilidades em tempo real.":"Pausada — o atraso volta ao normal.";
+    if(Date.now()>slidingUntil&&s.config){const ms=s.config.extra_delay_ms;$("margin").value=ms;$("mval").textContent=ms;$("mtag").textContent=tag(ms);}
+    if(s.config&&typeof s.config.qos!=="undefined")$("swQos").classList.toggle("on",!!s.config.qos);
+    $("pcip2").textContent=info.pc_ip||"—";
+
+    /* rota */
+    if(s.route){$("routePill").textContent=s.route.mode==="socks5"?"ligada":"desligada";
+      if(!routeInit){routeInit=true;$("swRoute").classList.toggle("on",s.route.mode==="socks5");
+        if(s.route.host)$("routeHost").value=s.route.host;if(s.route.port)$("routePort").value=s.route.port;}}
+
+    /* checklist */
+    setCheck("admin",info.admin?"ok":"bad",info.admin?"ok":"rode como Admin");
+    setCheck("routing",info.routing?"ok":"bad",info.routing?"ligado":"reinicie o PC");
+    let od="wait",odt="—";if(info.oodle_loaded){od="ok";odt="carregado";}else if(info.oodle_missing){od="bad";odt="falta o ffxiv_dx11.exe";}
+    setCheck("oodle",od,odt);
+    let op="wait",opt="—";if(info.opcodes_count>0){if(opcodesBad){op="bad";opt="não cobre seu servidor";}else{op="ok";opt=info.opcodes_date||"carregado";}}
+    setCheck("opcodes",op,opt);
+    if(info.oodle_missing&&info.vendor_path){$("oodleHint").style.display="block";
+      $("oodleHint").innerHTML='Coloque o <b>ffxiv_dx11.exe</b> nesta pasta:<br><b>'+info.vendor_path+'</b><br>depois feche e reabra o programa.';}
+    else $("oodleHint").style.display="none";
+    if(ga>0)setCheck("ps5","ok",ga+" conexão(ões) ativa(s)");
+    else if(s.flows>0)setCheck("ps5","wait","ocioso (sem tráfego do jogo agora)");
+    else setCheck("ps5","wait","aguardando…");
+
+    $("logpath").innerHTML=info.log_path?('Tudo é salvo em <b>'+info.log_path+'</b> — envie este arquivo para análise.'):'';
+  }catch(e){
+    $("offline").classList.add("show");
+  }
+}
+async function refreshLog(){try{const d=await api("/api/logs");const el=$("log");
+  const bottom=el.scrollHeight-el.scrollTop-el.clientHeight<40;
+  el.textContent=(d.lines&&d.lines.length)?d.lines.join("\n"):"(sem eventos ainda)";
+  if(bottom)el.scrollTop=el.scrollHeight;}catch(e){}}
+refresh();refreshLog();setInterval(refresh,1000);setInterval(refreshLog,2000);
+</script>
+</body>
+</html>

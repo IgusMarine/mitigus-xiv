@@ -1,0 +1,33 @@
+# === Build / empacotamento (PyInstaller) ===
+windows/build/
+windows/dist/
+**/__pycache__/
+*.pyc
+*.pyo
+*.spec.bak
+
+# === Entregáveis / binários grandes (não versionar) ===
+*.zip
+/ENVIAR AO AMIGO/
+/Mitigus XIV (app)*/
+
+# === Jogo: copyright — fornecido pelo usuário, NUNCA versionar ===
+ffxiv_dx11.exe
+**/ffxiv_dx11.exe
+**/vendor/
+
+# === Logs / runtime ===
+*.log
+
+# === Config local do Claude / sessão ===
+/.claude/
+
+# === Temporários de desenvolvimento ===
+windows/_*.py
+windows/_*.spec
+windows/_*.html
+
+# === SO ===
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,20 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.log
+
+# artefatos do PyInstaller
+build/
+dist/
+*.manifest
+
+# binários/segredos que o usuário fornece (nunca versionar)
+vendor/
+ffxiv_dx11.exe
+opcodes.json
+definitions.json
+
+# WinDivert vem do pydivert; ignore cópias locais
+WinDivert*.dll
+WinDivert*.sys
