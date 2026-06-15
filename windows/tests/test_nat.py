@@ -23,9 +23,21 @@ class NatTableTest(unittest.TestCase):
         a = t.snat("udp", "192.168.0.50", 5300, "1.1.1.1", 53)
         # resposta volta de 1.1.1.1:53 para PC:a
         self.assertEqual(t.dnat("udp", a, "1.1.1.1", 53), ("192.168.0.50", 5300))
-        # protocolo/origem que não casa -> None
+        # NAT cone (full cone): o retorno volta de QUALQUER origem pra (proto, alloc)
+        # -> é isso que faz jogo online/STUN funcionar (NAT Tipo 2).
+        self.assertEqual(t.dnat("udp", a, "9.9.9.9", 53), ("192.168.0.50", 5300))
+        # protocolo que não casa, ou porta não alocada -> None
         self.assertIsNone(t.dnat("tcp", a, "1.1.1.1", 53))
-        self.assertIsNone(t.dnat("udp", a, "9.9.9.9", 53))
+        self.assertIsNone(t.dnat("udp", 29999, "1.1.1.1", 53))
+
+    def test_cone_mapping_same_external_port_across_destinations(self):
+        # O CORAÇÃO do fix: o mesmo socket do aparelho (9308) usa a MESMA porta
+        # externa pra destinos DIFERENTES (STUN + servidor de jogo). NAT simétrico
+        # dava portas diferentes (Tipo 3, quebrava jogos); cone dá a mesma (Tipo 2).
+        t = NatTable(pool=(20000, 20009))
+        a = t.snat("udp", "192.168.0.50", 9308, "52.40.62.108", 3478)   # STUN
+        b = t.snat("udp", "192.168.0.50", 9308, "45.180.149.182", 12329)  # jogo
+        self.assertEqual(a, b)
 
     def test_pool_exhaustion_returns_none(self):
         t = NatTable(pool=(20000, 20001))  # só 2 portas

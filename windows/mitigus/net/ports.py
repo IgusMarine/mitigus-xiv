@@ -12,10 +12,13 @@ from typing import Iterable, Optional, Tuple
 
 PortRanges = Tuple[Tuple[int, int], ...]
 
+# Faixa TCP COMPLETA do FFXIV (lobby + jogo), contígua. A Square documenta blocos
+# diferentes por plataforma (PC ~54992-55040; CONSOLE PS4/PS5 chega a 55296-55551),
+# mas a frota viva responde em qualquer porta de 54992 a 55551 dependendo do data
+# center/shard. Cobrir só um pedaço fazia o lobby do PS4 (ex.: porta 553xx) escapar
+# pro NAT geral e quebrar (NW-31194-8). Um span único cobre PC/PS4/PS5.
 FFXIV_PORT_RANGES: PortRanges = (
-    (54992, 54994),
-    (55006, 55007),
-    (55021, 55040),
+    (54992, 55551),
 )
 
 

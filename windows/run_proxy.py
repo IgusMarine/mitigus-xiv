@@ -371,6 +371,34 @@ def _run_full(ps5_ip, pc_ip, port, mitigate, exe, extra_delay, opcodes_json, pan
         nat = DivertNat(cfg, ct, priority=1000)
         nat.start()
 
+        # DIAGNÓSTICO (temporário): SNIFF de TODA conexão TCP nova encaminhada (não
+        # interfere — só observa) pra descobrir em que IP/porta o FFXIV do console
+        # realmente conecta, e se cai na faixa do jogo.
+        def _diag_sniffer():
+            import pydivert as _pd
+            from mitigus.net.ports import port_in_ranges as _pir
+            _seen = set()
+            try:
+                with _pd.WinDivert("(tcp.Syn and tcp.Ack == 0) or udp",
+                                   layer=_pd.Layer.NETWORK_FORWARD,
+                                   flags=_pd.Flag.SNIFF, priority=2000) as _sw:
+                    log("[diag] sniffer LIGADO (toda conexão nova TCP/UDP encaminhada)")
+                    for _p in _sw:
+                        _proto = "TCP" if _p.tcp is not None else "UDP"
+                        _k = (_proto, _p.src_addr, _p.src_port, _p.dst_addr, _p.dst_port)
+                        if _k in _seen:
+                            continue
+                        _seen.add(_k)
+                        if len(_seen) > 600:
+                            _seen.clear()
+                        _tag = "  <<< FAIXA DO JOGO FFXIV" if _pir(_p.dst_port) else ""
+                        log(f"[diag] {_proto} {_p.src_addr}:{_p.src_port} -> "
+                            f"{_p.dst_addr}:{_p.dst_port}{_tag}")
+            except Exception as _e:
+                log(f"[diag] sniffer falhou: {_e!r}")
+        import threading
+        threading.Thread(target=_diag_sniffer, daemon=True, name="mitigus-diag").start()
+
         # Poller do ping WAN (perna PC->servidor) via SIO_TCP_INFO — grátis, sem
         # tráfego extra. Alimenta o painel (ping/jitter/retransmissão).
         ping_task = None

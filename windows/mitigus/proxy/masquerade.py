@@ -40,9 +40,19 @@ from typing import Callable, Optional, Tuple
 import pydivert
 from pydivert import Direction, Layer
 
+from ..net.ports import port_in_ranges
+
 
 class NatTable:
-    """Conntrack + alocação de porta (PAT) do masquerade. Thread-safe e testável."""
+    """Conntrack + alocação de porta (PAT) do masquerade — NAT CONE.
+
+    Mapeamento INDEPENDENTE do destino: o MESMO socket do aparelho (ip:porta) recebe
+    SEMPRE a MESMA porta externa, não importa pra qual servidor ele fale. Isso dá NAT
+    Tipo 2 (jogos online conectam: o servidor/peer sempre acha o console na mesma
+    porta). A versão antiga era SIMÉTRICA (uma porta por destino) = NAT Tipo 3, que
+    quebrava jogos (STUN/peer recebia uma porta e o tráfego saía por outra). Full
+    cone: o retorno é aceito de QUALQUER origem pra (proto, porta alocada).
+    Thread-safe e testável."""
 
     def __init__(self, pool: Tuple[int, int] = (20000, 29999), ttl: float = 120.0,
                  clock: Callable[[], float] = time.monotonic):
@@ -50,9 +60,8 @@ class NatTable:
         self._ttl = ttl
         self._clock = clock
         self._lock = threading.Lock()
-        self._fwd = {}   # (proto,dev_ip,dev_port,dst_ip,dst_port) -> [alloc, dev_ip, dev_port, last_seen]
-        self._rev = {}   # (proto,alloc,dst_ip,dst_port) -> fkey
-        self._used = {}  # (proto,alloc) -> fkey
+        self._fwd = {}   # (proto, dev_ip, dev_port) -> [alloc, last_seen]
+        self._rev = {}   # (proto, alloc)            -> (dev_ip, dev_port)
         self._cursor = self._lo
 
     def _alloc_port(self, proto: str) -> Optional[int]:
@@ -60,45 +69,43 @@ class NatTable:
         for _ in range(n):
             p = self._cursor
             self._cursor = self._lo if self._cursor >= self._hi else self._cursor + 1
-            if (proto, p) not in self._used:
+            if (proto, p) not in self._rev:
                 return p
         return None
 
-    def snat(self, proto, dev_ip, dev_port, dst_ip, dst_port) -> Optional[int]:
-        fkey = (proto, dev_ip, dev_port, dst_ip, dst_port)
+    def snat(self, proto, dev_ip, dev_port, dst_ip=None, dst_port=None) -> Optional[int]:
+        # dst_* são IGNORADOS de propósito (mapeamento independente do destino = cone).
+        key = (proto, dev_ip, dev_port)
         with self._lock:
-            e = self._fwd.get(fkey)
+            e = self._fwd.get(key)
             if e is not None:
-                e[3] = self._clock()
+                e[1] = self._clock()
                 return e[0]
             alloc = self._alloc_port(proto)
             if alloc is None:
                 return None
-            self._fwd[fkey] = [alloc, dev_ip, dev_port, self._clock()]
-            self._used[(proto, alloc)] = fkey
-            self._rev[(proto, alloc, dst_ip, dst_port)] = fkey
+            self._fwd[key] = [alloc, self._clock()]
+            self._rev[(proto, alloc)] = (dev_ip, dev_port)
             return alloc
 
-    def dnat(self, proto, alloc, internet_ip, internet_port) -> Optional[Tuple[str, int]]:
+    def dnat(self, proto, alloc, internet_ip=None, internet_port=None) -> Optional[Tuple[str, int]]:
+        # full cone: aceita o retorno de QUALQUER origem pra (proto, porta alocada).
         with self._lock:
-            fkey = self._rev.get((proto, alloc, internet_ip, internet_port))
-            if fkey is None:
+            dev = self._rev.get((proto, alloc))
+            if dev is None:
                 return None
-            e = self._fwd.get(fkey)
-            if e is None:
-                return None
-            e[3] = self._clock()
-            return (e[1], e[2])
+            e = self._fwd.get((proto, dev[0], dev[1]))
+            if e is not None:
+                e[1] = self._clock()
+            return dev
 
     def gc(self) -> int:
         now = self._clock()
         with self._lock:
-            dead = [k for k, e in self._fwd.items() if now - e[3] > self._ttl]
-            for fkey in dead:
-                e = self._fwd.pop(fkey)
-                proto, _, _, dst_ip, dst_port = fkey
-                self._used.pop((proto, e[0]), None)
-                self._rev.pop((proto, e[0], dst_ip, dst_port), None)
+            dead = [k for k, e in self._fwd.items() if now - e[1] > self._ttl]
+            for key in dead:
+                alloc = self._fwd.pop(key)[0]
+                self._rev.pop((key[0], alloc), None)
             return len(dead)
 
     def __len__(self):
@@ -200,6 +207,11 @@ class Masquerade:
             if packet.dst_addr.startswith(self._lan_prefix):
                 self._out_handle.send(packet)
                 continue
+            # [diag] o masquerade NÃO deveria ver pacote de jogo (o DivertNat pega antes).
+            # Se isto logar, o NAT geral está "roubando" o tráfego do FFXIV.
+            if packet.tcp is not None and port_in_ranges(packet.dst_port):
+                self._log(f"[diag] MASQ pegou porta-jogo {packet.src_addr}:{packet.src_port}"
+                          f" -> {packet.dst_addr}:{packet.dst_port}")
             # QoS anti-bufferbloat: sob ping alto, derruba pacote GRANDE de fundo
             # (TCP recua e o buffer esvazia). O jogo não passa aqui, então é poupado.
             if self.qos is not None and self.qos.should_drop(len(packet.payload or b"")):
@@ -219,10 +231,14 @@ class Masquerade:
 
     # Expira fluxos ociosos (libera portas do pool). Sem isto a tabela só cresce.
     def _gc_loop(self):
-        while not self._stop.wait(30.0):
+        while not self._stop.wait(15.0):
             freed = self.nat.gc()
             if freed:
                 self._log(f"gc: {freed} fluxo(s) expirado(s)")
+            # [diag] enviados x retornos casados x fluxos vivos. Se 'retornos' fica ~0
+            # enquanto 'enviados' sobe, as respostas não estão voltando pro aparelho.
+            self._log(f"[diag] stats: enviados={self.out_packets} "
+                      f"retornos={self.in_matched} fluxos_vivos={len(self.nat)}")
 
     # VOLTA: internet -> PC:porta_alocada (network inbound). Desfaz e manda pro aparelho.
     def _in_loop(self):
