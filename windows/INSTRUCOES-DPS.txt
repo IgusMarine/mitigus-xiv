@@ -1,0 +1,55 @@
+==========================================================
+  MITIGUS DPS  —  medidor de DPS pro PS5  (uso pessoal)
+==========================================================
+
+É o Mitigus de sempre (deixa o PS5 jogar através do PC e ainda reduz o
+ping), só que agora ele tambem MOSTRA O SEU DPS ao vivo numa pagina no
+navegador — com nome, job e o nome das habilidades. Funciona no PS5 normal.
+
+Voce nao precisa entender nada disso. Siga os passos.
+
+----------------------------------------------------------
+ANTES DE COMECAR
+----------------------------------------------------------
+1) FECHE o Mitigus normal, se estiver aberto (so um pode rodar por vez).
+
+2) Copie a pasta "vendor" do seu Mitigus normal para DENTRO da pasta
+   "Mitigus DPS" (a mesma que tem o "Mitigus DPS.exe").
+   (E a pasta com o ffxiv_dx11.exe que voce ja usa. Sem ela nao funciona.)
+
+----------------------------------------------------------
+PASSO A PASSO
+----------------------------------------------------------
+1) Abra o "Mitigus DPS.exe" -> botao direito -> "Executar como administrador".
+   * Se aparecer a tela azul "O Windows protegeu o seu PC": clique em
+     "Mais informacoes" -> "Executar assim mesmo".
+   * Permita administrador (SIM). Se ele pedir pra REINICIAR o Windows,
+     pode reiniciar (so na 1a vez; e o mesmo do Mitigus normal) e abrir
+     de novo depois.
+
+2) Vai abrir uma janela preta. Espere aparecer a linha:
+       painel de DPS: http://SEU-IP:8088
+   Anote esse endereco (o "SEU-IP" e o IP do PC).
+
+3) Abra esse endereco http://SEU-IP:8088 no navegador — pode ser no
+   CELULAR (mesma rede do PC) ou no proprio PC. Vai mostrar
+   "Aguardando combate...".
+
+4) NO PS5: depois que a janela preta abriu, faca o jogo TROCAR DE ZONA
+   (teleporte, ou entre numa instancia/treino). Isso e importante: o
+   medidor so "engata" quando o jogo abre uma conexao nova com ele rodando.
+
+5) Entre em combate (boneco de treino ou luta). O DPS aparece AO VIVO no
+   navegador: seu nome, seu job, e o DPS subindo.
+
+6) Quando terminar, feche a janela preta.
+
+----------------------------------------------------------
+OBSERVACOES
+----------------------------------------------------------
+- O DPS aparece no NAVEGADOR (a janela preta e so o status).
+- Trocar de job no jogo atualiza sozinho (ele descobre pelo que voce usa).
+- E so leitura — nao muda nada no jogo, e seguro (igual ao Mitigus normal).
+
+Qualquer coisa estranha (DPS zerado, nome errado, erro na janela preta),
+tira um print da janela preta + do navegador e manda pro Igor. Valeu!
