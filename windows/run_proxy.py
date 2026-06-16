@@ -192,7 +192,7 @@ def _opcode_date(defs):
     return None
 
 
-def _build_mitigation_factory(exe, opcodes_json, extra_delay, log, hub=None):
+def _build_mitigation_factory(exe, opcodes_json, extra_delay, log, hub=None, capture=None):
     from mitigus.mitigation.mitigator import Mitigator
     from mitigus.protocol.opcodes import load_definitions, match_for_server
 
@@ -243,12 +243,12 @@ def _build_mitigation_factory(exe, opcodes_json, extra_delay, log, hub=None):
             from mitigus.oodle.oodle import OodleHelper
 
             oodle = OodleHelper(module)
-        return Mitigator(opc, oodle=oodle, extra_delay=extra_delay, on_log=log, hub=hub)
+        return Mitigator(opc, oodle=oodle, extra_delay=extra_delay, on_log=log, hub=hub, capture=capture)
 
     return factory, refresh
 
 
-def _run_full(ps5_ip, pc_ip, port, mitigate, exe, extra_delay, opcodes_json, panel, panel_host, panel_port, open_mode="browser", on_ready=None, prompt_reboot=True) -> int:
+def _run_full(ps5_ip, pc_ip, port, mitigate, exe, extra_delay, opcodes_json, panel, panel_host, panel_port, open_mode="browser", on_ready=None, prompt_reboot=True, capture_path=None, capture_sink=None) -> int:
     logpath = _setup_logfile()
     if logpath:
         print(f"  log desta sessão: {logpath}  (envie este arquivo para análise)")
@@ -298,6 +298,20 @@ def _run_full(ps5_ip, pc_ip, port, mitigate, exe, extra_delay, opcodes_json, pan
         if hub is not None:
             hub.add_log(m)
 
+    # Captura opcional (variante DPS). Dois modos, ambos default-off:
+    #  - capture_sink: callable(direction, header, messages) ao vivo (ex.: meter)
+    #  - capture_path: grava os segmentos IPC pós-Oodle num JSONL (run_capture)
+    # capture_sink tem precedência. Só fazem sentido com mitigação (factory/Oodle).
+    recorder = None
+    if capture_path and mitigate and capture_sink is None:
+        from mitigus.capture.recorder import SegmentRecorder
+
+        recorder = SegmentRecorder(capture_path, started_ms=int(time.time() * 1000))
+        print(f"  CAPTURA ligada -> {capture_path}")
+        if hub is not None:
+            hub.add_log(f"captura: gravando segmentos em {os.path.basename(capture_path)}")
+    cap = capture_sink if capture_sink is not None else recorder
+
     factory = None
     refresh_opcodes = None
     if mitigate:
@@ -310,7 +324,7 @@ def _run_full(ps5_ip, pc_ip, port, mitigate, exe, extra_delay, opcodes_json, pan
             print(f"  ffxiv_dx11.exe: {exe}")
             try:
                 factory, refresh_opcodes = _build_mitigation_factory(
-                    exe, opcodes_json, extra_delay, log, hub=hub
+                    exe, opcodes_json, extra_delay, log, hub=hub, capture=cap
                 )
             except Exception as e:
                 print(f"! Falha ao preparar a mitigação: {e}")
@@ -426,6 +440,11 @@ def _run_full(ps5_ip, pc_ip, port, mitigate, exe, extra_delay, opcodes_json, pan
         asyncio.run(go())
     except KeyboardInterrupt:
         pass
+    finally:
+        if recorder is not None:
+            recorder.close()
+            print(f"  captura encerrada: {recorder.bundles} bundles, "
+                  f"{recorder.count} segmentos -> {capture_path}")
     return 0
 
 

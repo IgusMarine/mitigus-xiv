@@ -27,9 +27,12 @@ IMPORTANTE (Oodle é stateful):
 
 Uso (como Administrador):
     python run_tap.py            (precisa do ffxiv_dx11.exe em vendor\\ ou instalado)
+    python run_tap.py --out luta.jsonl   (além de validar, GRAVA os segmentos IPC
+                                          pós-Oodle p/ desofuscação offline — deob)
 """
 from __future__ import annotations
 
+import argparse
 import os
 import sys
 import time
@@ -107,6 +110,10 @@ class _Conn:
 
 
 def main() -> int:
+    ap = argparse.ArgumentParser(description="Mitigus XIV — TAP read-only (captura opcional)")
+    ap.add_argument("--out", help="grava os segmentos IPC pós-Oodle num .jsonl (p/ deob)")
+    args = ap.parse_args()
+
     print("=== Mitigus XIV — TAP (validação read-only do seu PC) ===")
     if not is_admin():
         print("! Rode como Administrador (o WinDivert carrega um driver de kernel).")
@@ -144,7 +151,14 @@ def main() -> int:
                 counters["cut"] += 1
         print(f"  [tap] {m}")
 
-    factory, _ = run_proxy._build_mitigation_factory(exe, None, 0.075, log, hub=None)
+    recorder = None
+    if args.out:
+        from mitigus.capture.recorder import SegmentRecorder
+
+        recorder = SegmentRecorder(args.out, started_ms=int(time.time() * 1000))
+        print(f"  CAPTURA ligada -> {args.out}  (gravando segmentos pós-Oodle)")
+
+    factory, _ = run_proxy._build_mitigation_factory(exe, None, 0.075, log, hub=None, capture=recorder)
 
     flt = build_filter()  # tcp and (porta do FFXIV em src OU dst)
     handle = pydivert.WinDivert(flt, layer=Layer.NETWORK, flags=Flag.SNIFF)
@@ -212,6 +226,10 @@ def main() -> int:
             handle.close()
         except Exception:
             pass
+        if recorder is not None:
+            recorder.close()
+            print(f"\n  captura: {recorder.bundles} bundles, {recorder.count} segmentos "
+                  f"-> {args.out}")
 
     print("\n  ----------------------------------------------------------")
     print(f"  RESUMO: conexões={len(conns)}  ActionRequest={counters['req']}  "

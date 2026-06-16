@@ -1,0 +1,60 @@
+==========================================================
+  MITIGUS — MODO CAPTURA  (so pra um teste, uso pessoal)
+==========================================================
+
+O que e: e o Mitigus normal (deixa o PS5 jogar atraves do PC, igual sempre),
+so que ele tambem GRAVA um arquivo pra eu analisar aqui. Voce nao precisa
+entender nada disso — e so seguir os passos e me mandar 1 arquivo no fim.
+
+NAO substitui o seu Mitigus normal. E so pra esse teste.
+
+----------------------------------------------------------
+ANTES DE COMECAR
+----------------------------------------------------------
+1) FECHE o Mitigus normal, se estiver aberto (so um pode rodar por vez).
+
+2) Copie a pasta "vendor" do seu Mitigus normal para DENTRO da pasta
+   "Mitigus Captura" (a mesma que tem o "Mitigus Captura.exe").
+   (E a pasta com o ffxiv_dx11.exe que voce ja usa. Sem ela nao funciona.)
+
+----------------------------------------------------------
+PASSO A PASSO
+----------------------------------------------------------
+1) Abra o "Mitigus Captura.exe" (clique com o botao direito ->
+   "Executar como administrador"). Vai abrir uma janela preta com textos —
+   e normal, pode deixar aberta.
+
+   * Se aparecer "O Windows protegeu o seu PC" (tela azul do SmartScreen):
+     clique em "Mais informacoes" -> "Executar assim mesmo". E porque o
+     programa nao e assinado (igual ao seu Mitigus normal).
+   * Vai pedir permissao de administrador -> clique em SIM.
+
+2) Espere aparecer a linha "proxy real" / "Ctrl+C encerra". Agora ja esta
+   gravando.
+
+3) NO PS5, com o FFXIV: faca o jogo TROCAR DE ZONA *depois* que a janela
+   abriu. O jeito mais facil:
+      - Teleporte para uma cidade (ex.: Limsa/Gridania/Ul'dah), OU
+      - Entre na area dos bonecos de treino (Striking Dummy).
+   >>> Isso e o passo MAIS importante: a gravacao so funciona se o jogo
+       carregar uma zona NOVA com a janela ja aberta.
+
+4) Bata num BONECO DE TREINO (striking dummy) por uns 30 a 60 segundos,
+   usando suas habilidades normalmente (pode usar a rotacao da sua job).
+
+5) Volte no PC e feche a janela preta (ou aperte Ctrl+C nela).
+
+----------------------------------------------------------
+O QUE ME MANDAR
+----------------------------------------------------------
+Dentro da pasta "Mitigus Captura" vai ter um arquivo chamado:
+
+      capture-AAAAMMDD-HHMMSS.jsonl   (ex.: capture-20260616-203015.jsonl)
+
+>>> Me manda ESSE arquivo .jsonl. So ele. <<<
+
+Obs.: esse arquivo tem dados do seu personagem (nome etc.) e da luta.
+E so pra esse teste; pode apagar depois que me mandar.
+
+Qualquer erro na janela preta, tira um print e me manda junto.
+Valeu!

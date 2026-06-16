@@ -72,6 +72,7 @@ class Mitigator:
         adaptive: bool = True,
         adaptive_k: float = 1.0,
         adaptive_max: float = 0.20,
+        capture=None,
     ):
         self.opcodes = opcodes
         self.oodle = oodle
@@ -91,6 +92,11 @@ class Mitigator:
         # Modo de inspeção (run_tap.py): decodifica + detecta + loga o corte, mas NÃO
         # reserializa/reencoda (read-only). Produção deixa False.
         self.dry_run = False
+        # Sink de captura opcional (variante DPS): callable(direction, header,
+        # messages). Recebe os segmentos PRISTINE pós-Oodle (antes do process_fn),
+        # ou seja, os bytes exatos do fio — material para desofuscação offline.
+        # None em produção: caminho idêntico ao atual (só um if a mais).
+        self._capture = capture
 
         self.pending_actions: deque = deque()
         self.last_animation_lock_ends_at = 0.0
@@ -123,6 +129,14 @@ class Mitigator:
                     out.extend(item[1])
             else:
                 _, header, messages = item
+                if self._capture is not None:
+                    # PRISTINE: antes de process_fn (que pode reescrever campos).
+                    # read-only; uma falha de captura nunca derruba o relay.
+                    direction = "c2s" if decode_ch == 0 else "s2c"
+                    try:
+                        self._capture(direction, header, messages)
+                    except Exception:
+                        pass
                 process_fn(header, messages)  # detecta + loga o corte (sempre)
                 if not self.dry_run:
                     out.extend(self._serialize(header, messages, encode_ch))

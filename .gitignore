@@ -19,6 +19,12 @@ ffxiv_dx11.exe
 # === Logs / runtime ===
 *.log
 
+# === Capturas (contêm dados pessoais: nome/Content ID do personagem) ===
+# nenhum .jsonl deve ir pro repo (capturas reais têm dados do personagem;
+# fixtures de teste ficam em dirs temporários)
+*.jsonl
+**/*.jsonl
+
 # === Config local do Claude / sessão ===
 /.claude/
 
