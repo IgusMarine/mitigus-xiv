@@ -12,6 +12,7 @@ MESMA lógica (usado em teste e no analisador).
 from __future__ import annotations
 
 from .combat import parse_action_effect
+from .names import action_job
 from .spawn import parse_player_spawn
 from .tracker import DpsTracker
 from ..deob import Deobfuscator
@@ -81,6 +82,11 @@ class MeterFeed:
         # é o jeito robusto de marcar "Você", mesmo em party.
         if ae.source_sequence != 0:
             self.tracker.mark_self(src)
+        # job dinâmico: infere pela ação usada (Dosis III -> SGE). Sobrevive a
+        # troca de gearset sem re-zonar, e cobre os outros da party.
+        aj = action_job(ae.action_id)
+        if aj:
+            self.tracker.set_actor_info(src, job=aj)
         for e in ae.effects:
             if e.is_damage:
                 self.tracker.record_damage(

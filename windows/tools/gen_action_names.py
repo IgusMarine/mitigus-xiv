@@ -55,12 +55,16 @@ def _rows(text: str):
     return list(csv.reader(io.StringIO(text)))
 
 
-def build_actions(text: str) -> dict:
+def build_actions(text: str, jobs: dict):
+    """Devolve (names{id:nome}, action_jobs{id:abbr}). action_jobs só inclui
+    ações de UM job (ClassJob válido) — permite inferir o job do ator pela ação
+    que ele usa (troca de job ao vivo, sem depender do PlayerSpawn)."""
     rows = _rows(text)
     header = rows[0]  # linha 0 = nomes de coluna; dados a partir da linha 1
     i_name = header.index("Name")
     i_cat = header.index("ActionCategory")
-    out = {}
+    i_cj = header.index("ClassJob")
+    names, action_jobs = {}, {}
     for row in rows[1:]:
         if not row or not row[0].isdigit():
             continue
@@ -70,8 +74,15 @@ def build_actions(text: str) -> dict:
             continue
         name = row[i_name].strip()
         if name and cat in COMBAT_CATEGORIES:
-            out[int(row[0])] = name
-    return out
+            aid = int(row[0])
+            names[aid] = name
+            try:
+                cj = int(row[i_cj])
+            except ValueError:
+                cj = 0
+            if cj in jobs:          # ClassJob único e válido (1..43)
+                action_jobs[aid] = jobs[cj]
+    return names, action_jobs
 
 
 def build_jobs(text: str) -> dict:
@@ -90,14 +101,15 @@ def build_jobs(text: str) -> dict:
 
 def main() -> int:
     os.makedirs(OUT_DIR, exist_ok=True)
-    actions = build_actions(_fetch("Action.csv"))
     jobs = build_jobs(_fetch("ClassJob.csv"))
+    actions, action_jobs = build_actions(_fetch("Action.csv"), jobs)
     data = {"_meta": "ffxiv-datamining (Square Enix); gerado por tools/gen_action_names.py",
-            "actions": actions, "jobs": jobs}
+            "actions": actions, "jobs": jobs, "action_jobs": action_jobs}
     with open(OUT, "w", encoding="utf-8") as fh:
         json.dump(data, fh, ensure_ascii=False, separators=(",", ":"))
     size = os.path.getsize(OUT)
-    print(f"  OK: {len(actions)} ações + {len(jobs)} jobs -> {OUT} ({size/1024:.0f} KB)")
+    print(f"  OK: {len(actions)} ações ({len(action_jobs)} c/ job) + {len(jobs)} jobs "
+          f"-> {OUT} ({size/1024:.0f} KB)")
     return 0
 
 

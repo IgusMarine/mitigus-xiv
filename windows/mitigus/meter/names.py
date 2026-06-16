@@ -30,9 +30,9 @@ def _load():
     try:
         with open(_DATA, encoding="utf-8") as fh:
             d = json.load(fh)
-        return d.get("actions", {}), d.get("jobs", {})
+        return d.get("actions", {}), d.get("jobs", {}), d.get("action_jobs", {})
     except Exception:
-        return {}, {}
+        return {}, {}, {}
 
 
 def has_data() -> bool:
@@ -40,12 +40,19 @@ def has_data() -> bool:
 
 
 def action_name(action_id: int) -> str:
-    actions, _ = _load()
+    actions, _, _ = _load()
     return actions.get(str(action_id)) or f"#{action_id}"
 
 
 def job_abbr(classjob_id: int):
     if not classjob_id:
         return None
-    _, jobs = _load()
+    _, jobs, _ = _load()
     return jobs.get(str(classjob_id)) or _JOBS.get(classjob_id)
+
+
+def action_job(action_id: int):
+    """Job (abbr) de uma ação de UM job só — pra inferir o job do ator ao vivo.
+    None se a ação é compartilhada/desconhecida."""
+    _, _, action_jobs = _load()
+    return action_jobs.get(str(action_id))

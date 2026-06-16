@@ -148,6 +148,18 @@ class DpsTrackerTest(unittest.TestCase):
         self.assertEqual(snap["total_damage"], 50)
         self.assertEqual(t.encounters, 2)
 
+    def test_identity_survives_reset(self):
+        # bug observado: trocar de luta apagava nome/job/level. Identidade persiste.
+        t = DpsTracker(idle_reset_s=10.0)
+        t.set_actor_info(0xA, name="Igus Marine", job="GNB", level=100)
+        t.record_damage(0xA, 100, ts_ms=0)
+        t.record_damage(0xA, 50, ts_ms=20000)   # +20s idle -> nova luta
+        a = t.snapshot()["actors"][0]
+        self.assertEqual(a["damage"], 50)        # stats zeraram (luta nova)
+        self.assertEqual(a["name"], "Igus Marine")  # identidade PERSISTE
+        self.assertEqual(a["job"], "GNB")
+        self.assertEqual(a["level"], 100)
+
     def test_dps_and_pct(self):
         t = DpsTracker()
         t.record_damage(0xA, 1000, ts_ms=0)

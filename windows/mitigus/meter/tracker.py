@@ -5,8 +5,13 @@ Recebe eventos de dano (por ator) e mantém o "encounter" atual: começa no
 primeiro dano, e RESETA se ficar idle por `idle_reset` segundos (fim de luta).
 Expõe um snapshot pronto pra UI (atores ordenados por dano, com DPS, %, crit/DH).
 
-Os timestamps são em MILISSEGUNDOS (os do bundle, do fio) — consistente com o
-analisador offline. DPS = dano / (último - primeiro) da janela ativa.
+IDENTIDADE x STATS: o nome/job/level de cada ator é PERSISTENTE (vem do
+PlayerSpawn, que é raro, e do job inferido pelas ações). As estatísticas de dano
+são por-encounter e zeram no reset. Por isso identidade e stats ficam em mapas
+separados — senão a troca de luta apagaria o job/nome (bug observado).
+
+Os timestamps são em MILISSEGUNDOS (os do bundle, do fio). DPS = dano / (último
+- primeiro) da janela ativa.
 """
 from __future__ import annotations
 
@@ -17,7 +22,8 @@ from .names import action_name
 
 
 class _Actor:
-    __slots__ = ("id", "damage", "hits", "crit", "dh", "name", "job", "level", "actions")
+    """Stats de UMA luta (zeram no reset)."""
+    __slots__ = ("id", "damage", "hits", "crit", "dh", "actions")
 
     def __init__(self, actor_id):
         self.id = actor_id
@@ -25,9 +31,6 @@ class _Actor:
         self.hits = 0
         self.crit = 0
         self.dh = 0
-        self.name = None
-        self.job = None
-        self.level = None
         self.actions = {}     # action_id -> dano acumulado (pra "top ability")
 
 
@@ -37,7 +40,8 @@ class DpsTracker:
         self._idle_reset_ms = idle_reset_s * 1000.0
         self._start_ms = None
         self._last_ms = None
-        self._actors: dict[int, _Actor] = {}
+        self._actors: dict[int, _Actor] = {}       # stats da luta (resetável)
+        self._info: dict[int, dict] = {}           # identidade (PERSISTENTE)
         self._self_id = None
         self.encounters = 0
 
@@ -65,22 +69,22 @@ class DpsTracker:
                 a.actions[action_id] = a.actions.get(action_id, 0) + value
 
     def set_actor_info(self, actor_id, name=None, job=None, level=None):
+        # identidade é PERSISTENTE — sobrevive ao reset de luta.
         with self._lock:
-            a = self._actors.get(actor_id)
-            if a is None:
-                a = self._actors[actor_id] = _Actor(actor_id)
+            info = self._info.setdefault(actor_id, {})
             if name is not None:
-                a.name = name
+                info["name"] = name
             if job is not None:
-                a.job = job
+                info["job"] = job
             if level:
-                a.level = level
+                info["level"] = level
 
     def mark_self(self, actor_id):
         with self._lock:
             self._self_id = actor_id
 
     def reset(self):
+        # zera só a luta; mantém identidade (você continua sendo você).
         with self._lock:
             self._reset_locked()
 
@@ -101,13 +105,15 @@ class DpsTracker:
             for a in sorted(self._actors.values(), key=lambda x: -x.damage):
                 if a.damage == 0 and a.hits == 0:
                     continue
+                info = self._info.get(a.id, {})
                 dps = a.damage / dur if dur > 0 else 0.0
                 top_id = max(a.actions, key=a.actions.get) if a.actions else 0
                 rows.append({
                     "id": a.id,
-                    "name": a.name or (f"Você" if a.id == self._self_id else f"{a.id:08X}"),
-                    "job": a.job,
-                    "level": a.level,
+                    "name": info.get("name") or (
+                        "Você" if a.id == self._self_id else f"{a.id:08X}"),
+                    "job": info.get("job"),
+                    "level": info.get("level"),
                     "is_self": a.id == self._self_id,
                     "damage": a.damage,
                     "dps": round(dps, 1),
