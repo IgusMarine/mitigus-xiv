@@ -43,6 +43,20 @@ class HubRouteTest(unittest.TestCase):
         h.set_route(mode="socks5", host="x", port="abc")
         self.assertEqual(h.route()["port"], 1080)  # mantém default
 
+    def test_gpn_mode(self):
+        # modo GPN: relay sai por socket normal; o GPN do PC (ExitLag/NoPing/
+        # Mudfish) é quem roteia. Não usa host:port (rota é a do sistema).
+        h = ControlHub()
+        self.assertEqual(h.set_route(mode="gpn")["mode"], "gpn")
+        self.assertEqual(h.status()["route"]["mode"], "gpn")
+        # alternar pro VPS e voltar pro GPN é exclusivo (um modo só por vez).
+        self.assertEqual(h.set_route(mode="socks5", host="1.2.3.4")["mode"], "socks5")
+        self.assertEqual(h.set_route(mode="gpn")["mode"], "gpn")
+
+    def test_unknown_mode_falls_to_off(self):
+        h = ControlHub()
+        self.assertEqual(h.set_route(mode="banana")["mode"], "off")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -117,8 +117,9 @@ class PanelServer:
                                 "qos": bool(cfg["qos"])})
                 elif parsed.path == "/api/reboot":
                     from ..net.adapters import reboot_windows
+                    from ..i18n import t
                     ok = reboot_windows(20)
-                    hub.add_log("reinício do Windows solicitado pelo painel (20s)")
+                    hub.add_log(t("log.reboot_req"))
                     self._json({"ok": ok, "delay": 20})
                 elif parsed.path == "/api/route":
                     qs = urllib.parse.parse_qs(parsed.query)
@@ -126,6 +127,13 @@ class PanelServer:
                     host = qs.get("host", [None])[0]
                     port = qs.get("port", [None])[0]
                     self._json(hub.set_route(mode=mode, host=host, port=port))
+                elif parsed.path == "/api/lang":
+                    # idioma (EN/PT/ES). O painel é a fonte da verdade: detecta e
+                    # manda; aqui persistimos pra bandeja/diálogos/logs do Python.
+                    from ..i18n import save_lang
+                    qs = urllib.parse.parse_qs(parsed.query)
+                    lang = qs.get("lang", [None])[0]
+                    self._json({"lang": save_lang(lang)})
                 elif parsed.path == "/api/opcodes/update":
                     if on_update is None:
                         self._json({"ok": False, "error": "indisponível neste modo"})

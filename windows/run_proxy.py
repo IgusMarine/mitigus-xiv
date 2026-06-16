@@ -265,18 +265,12 @@ def _run_full(ps5_ip, pc_ip, port, mitigate, exe, extra_delay, opcodes_json, pan
     from mitigus.net.adapters import (enable_routing, reboot_pending, reboot_should_prompt,
                                        mark_reboot_dismissed, ask_yes_no, reboot_windows)
     enable_routing()
+    from mitigus import i18n
+    i18n.load_lang()  # idioma salvo (ou o do Windows) p/ o diálogo e os logs do hub
     reboot_needed = reboot_pending()  # alimenta o banner do painel
     if prompt_reboot and reboot_should_prompt():
         mark_reboot_dismissed()  # no máximo 1 popup por boot
-        if ask_yes_no(
-            "Mitigus XIV — reiniciar o Windows?",
-            "Para o seu PS5/PS4 conseguir conectar (aceitar o PC como gateway), o "
-            "Windows precisa ter sido reiniciado UMA vez depois de ativar o "
-            "compartilhamento de internet. Sem isso, o console dá erro de rede.\n\n"
-            "• Se o console JÁ conecta normalmente, pode clicar Não.\n"
-            "• Se ainda não testou, ou deu erro de rede no console, clique Sim.\n\n"
-            "Salve seus arquivos abertos. Reiniciar agora?",
-        ):
+        if ask_yes_no(i18n.t("dlg.reboot_title"), i18n.t("dlg.reboot_text")):
             reboot_windows(20)
             print("  Reiniciando o Windows em 20 segundos...")
             return 0
@@ -341,8 +335,13 @@ def _run_full(ps5_ip, pc_ip, port, mitigate, exe, extra_delay, opcodes_json, pan
 
     async def go() -> None:
         async def _connect_upstream(host, port, timeout):
-            # rota opcional (VPS via SOCKS5). Off por padrão. Se o VPS falhar, cai
-            # pra conexão DIRETA — um VPS ruim nunca derruba o jogo.
+            # rota do upstream do jogo (PC->servidor):
+            #  - socks5: manda por um VPS próprio; se o VPS falhar, cai pra DIRETA
+            #            (um VPS ruim nunca derruba o jogo).
+            #  - gpn/off: socket NORMAL. No modo GPN é de propósito — o tráfego sai
+            #            pela rota do sistema, onde o ExitLag/NoPing/Mudfish do PC o
+            #            captura pelos IPs do servidor e otimiza. O único cuidado é
+            #            NÃO sequestrar pro SOCKS5 (senão rotearia duas vezes).
             route = hub.route() if hub is not None else None
             if route and route.get("mode") == "socks5" and route.get("host"):
                 from mitigus.net.socks5 import open_via_socks5

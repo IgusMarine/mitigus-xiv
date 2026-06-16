@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+import tempfile
 import unittest
 import urllib.request
 
@@ -97,6 +98,21 @@ class PanelServerTest(unittest.TestCase):
         _, body = _post(self._base() + "/api/config?extra_delay_ms=90")
         self.assertEqual(json.loads(body)["extra_delay_ms"], 90)
         self.assertAlmostEqual(self.hub.extra_delay(), 0.09, places=4)
+
+    def test_lang_endpoint(self):
+        old = os.environ.get("LOCALAPPDATA")
+        with tempfile.TemporaryDirectory() as d:  # não escreve no dir real do usuário
+            os.environ["LOCALAPPDATA"] = d
+            try:
+                _, body = _post(self._base() + "/api/lang?lang=es")
+                self.assertEqual(json.loads(body)["lang"], "es")
+                _, body = _post(self._base() + "/api/lang?lang=xx")  # inválido -> en
+                self.assertEqual(json.loads(body)["lang"], "en")
+            finally:
+                if old is None:
+                    os.environ.pop("LOCALAPPDATA", None)
+                else:
+                    os.environ["LOCALAPPDATA"] = old
 
     def test_opcodes_update_unavailable_without_handler(self):
         _, body = _post(self._base() + "/api/opcodes/update")

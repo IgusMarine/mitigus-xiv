@@ -29,6 +29,7 @@ hiddenimports = webview_hiddenimports + collect_submodules("pydivert") + [
     "mitigus.oodle.locate",
     "mitigus.panel.server",
     "mitigus.panel.hub",
+    "mitigus.i18n",
     "mitigus.mitigation.mitigator",
     "mitigus.proxy.divert_nat",
     "mitigus.proxy.masquerade",

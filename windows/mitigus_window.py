@@ -25,20 +25,12 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
 
+from mitigus import i18n  # noqa: E402  (depende do sys.path acima)
+
 _window = None
 _tray = None
 _is_max = False
 _quitting = False
-
-_REBOOT_TITLE = "Mitigus XIV — reiniciar o Windows?"
-_REBOOT_TEXT = (
-    "Para o seu PS5/PS4 conseguir conectar (aceitar o PC como gateway), o "
-    "Windows precisa ter sido reiniciado UMA vez depois de ativar o "
-    "compartilhamento de internet. Sem isso, o console dá erro de rede.\n\n"
-    "• Se o console JÁ conecta normalmente, clique Não.\n"
-    "• Se ainda não testou, ou deu erro de rede no console, clique Sim.\n\n"
-    "Salve seus arquivos abertos. Reiniciar agora?"
-)
 
 
 def _msgbox(text: str, title: str = "Mitigus XIV", flags: int = 0x10) -> None:
@@ -124,9 +116,11 @@ def _run_tray():
             if _window:
                 _window.destroy()
 
+    # texto via callable: pystray reavalia quando o menu abre, então segue o idioma
+    # atual (o painel manda /api/lang e o i18n troca em tempo real).
     menu = pystray.Menu(
-        pystray.MenuItem("Abrir painel", _show, default=True),
-        pystray.MenuItem("Sair", _quit),
+        pystray.MenuItem(lambda item: i18n.t("tray.open"), _show, default=True),
+        pystray.MenuItem(lambda item: i18n.t("tray.quit"), _quit),
     )
     _tray = pystray.Icon("MitigusXIV", _icon_image(), "Mitigus XIV", menu)
     _tray.run()
@@ -153,6 +147,10 @@ def run_window(url: str) -> int:
 
 
 def main() -> int:
+    # idioma salvo (ou o do Windows no 1º uso) — pra bandeja/diálogos saírem certos
+    # antes do painel abrir e mandar /api/lang.
+    i18n.load_lang()
+
     # Modo de teste: só a janela, sem Admin/proxy (pra ver a UI contra o run_panel).
     if "--test-url" in sys.argv:
         i = sys.argv.index("--test-url")
@@ -164,13 +162,13 @@ def main() -> int:
         reboot_should_prompt, reboot_windows)
 
     if not is_admin():
-        _msgbox("Preciso de Administrador.\nAbra de novo e aceite o aviso do Windows (UAC).")
+        _msgbox(i18n.t("dlg.need_admin"))
         return 2
 
     enable_routing()
     if reboot_should_prompt():
         mark_reboot_dismissed()
-        if ask_yes_no(_REBOOT_TITLE, _REBOOT_TEXT):
+        if ask_yes_no(i18n.t("dlg.reboot_title"), i18n.t("dlg.reboot_text")):
             reboot_windows(20)
             return 0
 
@@ -198,11 +196,7 @@ def main() -> int:
     except queue.Empty:
         url, hub, _refresh = None, None, None
     if hub is None or not url:
-        _msgbox(
-            "Não consegui iniciar.\n\nSe a versão ANTERIOR do Mitigus ainda estiver "
-            "aberta (ícone na bandeja, perto do relógio), feche-a primeiro: clique com "
-            "o botão direito nela e em 'Sair'. Depois abra este de novo.\n\n"
-            "Detalhes no arquivo mitigus.log (ao lado do programa).")
+        _msgbox(i18n.t("dlg.cant_start"))
         return 1
 
     return run_window(url)
@@ -214,5 +208,5 @@ if __name__ == "__main__":
     except SystemExit:
         raise
     except Exception:
-        _msgbox("Erro inesperado.\nVeja o arquivo mitigus.log.")
+        _msgbox(i18n.t("dlg.unexpected"))
         raise SystemExit(1)

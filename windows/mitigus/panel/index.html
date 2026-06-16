@@ -68,6 +68,11 @@
   .tb-tab .dot{position:absolute;top:11px;right:9px;width:6px;height:6px;border-radius:50%;
     background:var(--warn);box-shadow:0 0 8px var(--warn);display:none}
   .tb-tab.warn .dot{display:block}
+  .tb-lang{align-self:center;margin-right:6px;background:var(--surface);color:var(--muted);
+    border:1px solid var(--line);border-radius:7px;font-family:inherit;font-size:11.5px;font-weight:600;
+    letter-spacing:.04em;padding:4px 6px;cursor:pointer;outline:none}
+  .tb-lang:hover{color:var(--cyan);border-color:var(--cyan-dim)}
+  html:not(.is-app) .tb-lang{margin-right:14px}
   .tb-btns{display:none;height:100%}
   html.is-app .tb-btns{display:flex}
   .tb-btn{width:46px;height:100%;border:0;background:transparent;color:oklch(0.82 0.02 220);
@@ -286,18 +291,23 @@
 
   <!-- ════ BARRA DE TÍTULO PRÓPRIA ════ -->
   <div class="tbar">
-    <div class="tb-left pywebview-drag-region" id="tbDrag" title="arraste para mover">
+    <div class="tb-left pywebview-drag-region" id="tbDrag" data-i18n-title="win.drag" title="arraste para mover">
       <span class="tb-brand"><svg viewBox="0 0 24 24"><path d="M12 2 4 9l8 13 8-13-8-7Z"/><path d="M4 9h16M9.2 4.2 8 9l4 13M14.8 4.2 16 9l-4 13"/></svg></span>
       <span class="tb-title">MITIGUS&nbsp;XIV</span>
     </div>
     <div class="tb-tabs">
-      <button class="tb-tab on" data-s="painel">Painel</button>
-      <button class="tb-tab" data-s="config" id="tabConfig">Configuração<span class="dot"></span></button>
+      <button class="tb-tab on" data-s="painel" data-i18n="nav.panel">Painel</button>
+      <button class="tb-tab" data-s="config" id="tabConfig"><span data-i18n="nav.config">Configuração</span><span class="dot"></span></button>
     </div>
+    <select class="tb-lang" id="langSel" title="Idioma / Language / Idioma">
+      <option value="en">EN</option>
+      <option value="pt">PT</option>
+      <option value="es">ES</option>
+    </select>
     <div class="tb-btns">
-      <button class="tb-btn" id="btnMin" title="Minimizar"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
-      <button class="tb-btn" id="btnMax" title="Maximizar"><svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"/></svg></button>
-      <button class="tb-btn tb-close" id="btnClose" title="Fechar (vai pra bandeja)"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      <button class="tb-btn" id="btnMin" data-i18n-title="win.min" title="Minimizar"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
+      <button class="tb-btn" id="btnMax" data-i18n-title="win.max" title="Maximizar"><svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"/></svg></button>
+      <button class="tb-btn tb-close" id="btnClose" data-i18n-title="win.close" title="Fechar (vai pra bandeja)"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
     </div>
   </div>
 
@@ -306,7 +316,7 @@
 
     <div class="offline" id="offline">
       <svg class="i" viewBox="0 0 24 24"><path d="M12 2v6M12 16v6M2 12h6M16 12h6"/></svg>
-      Sem conexão com o Mitigus. Tentando de novo…
+      <span data-i18n="offline">Sem conexão com o Mitigus. Tentando de novo…</span>
     </div>
 
     <!-- ════════════ PAINEL (só informação) ════════════ -->
@@ -314,78 +324,78 @@
 
       <div class="reboot" id="rebootBanner">
         <svg class="i" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 2.6-6.3L3 8M3 3v5h5"/></svg>
-        <div class="tx"><b>Falta reiniciar o Windows</b>Reinicie 1x pro console aceitar o PC como gateway. Se já conecta, pode ignorar.</div>
-        <button onclick="doReboot()">Reiniciar</button>
+        <div class="tx"><b data-i18n="reboot.title">Falta reiniciar o Windows</b><span data-i18n="reboot.body">Reinicie 1x pro console aceitar o PC como gateway. Se já conecta, pode ignorar.</span></div>
+        <button onclick="doReboot()" data-i18n="reboot.btn">Reiniciar</button>
       </div>
 
       <div class="statusbar">
-        <span class="pill" id="stMit"><span class="pdot" id="stMitDot"></span>Mitigando</span>
+        <span class="pill" id="stMit"><span class="pdot" id="stMitDot"></span><span id="stMitTxt" data-i18n="status.mitigating">Mitigando</span></span>
         <span class="sep"></span>
-        <span class="pill" style="color:var(--muted)"><svg class="i gico idle" id="stGameIco" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="9" rx="4.5"/><path d="M7.5 12.5h2.5M8.75 11.25v2.5M16 12h.01M17.6 13.5h.01"/></svg><span id="stGame">aguardando</span></span>
+        <span class="pill" style="color:var(--muted)"><svg class="i gico idle" id="stGameIco" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="9" rx="4.5"/><path d="M7.5 12.5h2.5M8.75 11.25v2.5M16 12h.01M17.6 13.5h.01"/></svg><span id="stGame" data-i18n="game.waiting0">aguardando</span></span>
         <span class="srv" id="stSrv"></span>
       </div>
 
       <div class="hero" id="hero">
-        <div class="lab"><svg class="i" viewBox="0 0 24 24"><path d="M14 4 6 14h5l-1 6 8-10h-5l1-6Z"/></svg> Trava de animação · último corte</div>
+        <div class="lab"><svg class="i" viewBox="0 0 24 24"><path d="M14 4 6 14h5l-1 6 8-10h-5l1-6Z"/></svg> <span data-i18n="hero.label">Trava de animação · último corte</span></div>
         <div class="row" id="heroRow">
           <span class="o" id="heroO">—</span>
           <span class="n" id="heroN">—<small>ms</small></span>
         </div>
         <span class="chip" id="heroChip"><svg class="i" viewBox="0 0 24 24"><path d="M5 12l5 5 9-11"/></svg> <span id="heroChipTxt">—</span></span>
-        <span class="cap" id="heroCap">Cada habilidade libera mais cedo — dá pra encaixar a próxima skill (double weave).</span>
+        <span class="cap" id="heroCap" data-i18n="hero.cap0">Cada habilidade libera mais cedo — dá pra encaixar a próxima skill (double weave).</span>
         <div class="empty" id="heroEmpty" style="display:none">
           <svg class="i" viewBox="0 0 24 24"><path d="M14 4 6 14h5l-1 6 8-10h-5l1-6Z"/></svg>
-          <b id="heroEmptyT">Tudo pronto.</b><span id="heroEmptyS">Entre em combate para ver os cortes ao vivo.</span>
+          <b id="heroEmptyT" data-i18n="hero.emptyT0">Tudo pronto.</b><span id="heroEmptyS" data-i18n="hero.emptyS0">Entre em combate para ver os cortes ao vivo.</span>
         </div>
       </div>
 
-      <div class="sec-cap">Latência</div>
+      <div class="sec-cap" data-i18n="sec.latency">Latência</div>
       <div class="pings">
         <div class="pcard net">
-          <div class="pc-h"><svg class="i" viewBox="0 0 24 24"><path d="M5 13a10 10 0 0 1 14 0M8.5 16.5a5 5 0 0 1 7 0M12 20h.01"/></svg> Sua conexão</div>
+          <div class="pc-h"><svg class="i" viewBox="0 0 24 24"><path d="M5 13a10 10 0 0 1 14 0M8.5 16.5a5 5 0 0 1 7 0M12 20h.01"/></svg> <span data-i18n="ping.net">Sua conexão</span></div>
           <div class="pc-big" id="netBig">—<small>ms</small></div>
-          <div class="pc-sub" id="netSub">PC → servidor → PC</div>
+          <div class="pc-sub" id="netSub" data-i18n="ping.netSub">PC → servidor → PC</div>
           <div class="pc-foot">
-            <div class="m"><b id="netMin">—</b><span>melhor caso</span></div>
-            <div class="m"><b id="netJit">—</b><span>estabilidade</span></div>
+            <div class="m"><b id="netMin">—</b><span data-i18n="ping.best">melhor caso</span></div>
+            <div class="m"><b id="netJit">—</b><span data-i18n="ping.stability">estabilidade</span></div>
           </div>
         </div>
         <div class="pcard game">
-          <div class="pc-h"><svg class="i" viewBox="0 0 24 24"><path d="M14 4 6 14h5l-1 6 8-10h-5l1-6Z"/></svg> Ping no jogo <span class="q" id="qbtn">?</span></div>
+          <div class="pc-h"><svg class="i" viewBox="0 0 24 24"><path d="M14 4 6 14h5l-1 6 8-10h-5l1-6Z"/></svg> <span data-i18n="ping.game">Ping no jogo</span> <span class="q" id="qbtn">?</span></div>
           <div class="pc-big" id="gameBig">—<small>ms</small></div>
-          <div class="pc-sub">apertar → acontecer</div>
+          <div class="pc-sub" data-i18n="ping.gameSub">apertar → acontecer</div>
           <div class="pc-foot">
-            <div class="m"><b id="gamePeak">—</b><span>picos</span></div>
-            <div class="m"><b style="color:var(--on)">normal</b><span>pra distância</span></div>
+            <div class="m"><b id="gamePeak">—</b><span data-i18n="ping.peaks">picos</span></div>
+            <div class="m"><b style="color:var(--on)" data-i18n="ping.normal">normal</b><span data-i18n="ping.forDistance">pra distância</span></div>
           </div>
         </div>
       </div>
 
       <div class="connector">
         <svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
-        <span>O <b>ping no jogo</b> é maior porque inclui o tempo do servidor processar a habilidade. Os dois são ida-e-volta — você <b>não</b> soma um ao outro.</span>
+        <span data-i18n-html="connector">O <b>ping no jogo</b> é maior porque inclui o tempo do servidor processar a habilidade. Os dois são ida-e-volta — você <b>não</b> soma um ao outro.</span>
       </div>
       <div class="explain" id="explain">
-        <b>Por que tenho dois números diferentes?</b><br>
-        A <code>Sua conexão</code> é só a sua internet: o tempo de ir até o servidor e voltar.
+        <b data-i18n="explain.title">Por que tenho dois números diferentes?</b><br>
+        <span data-i18n-html="explain.body"><code>Sua conexão</code> é só a sua internet: o tempo de ir até o servidor e voltar.
         O <code>Ping no jogo</code> é maior porque inclui o tempo do servidor do FFXIV pensar e responder à sua ação — não é a sua internet ruim, é assim pra todo mundo.
-        O Mitigus trabalha em cima do <code>Ping no jogo</code>: desconta a parte da viagem de rede da trava de animação, e é por isso que você encaixa duas skills onde antes só cabia uma.
+        O Mitigus trabalha em cima do <code>Ping no jogo</code>: desconta a parte da viagem de rede da trava de animação, e é por isso que você encaixa duas skills onde antes só cabia uma.</span>
       </div>
 
       <div class="sparkwrap">
         <canvas id="spark" width="520" height="50"></canvas>
-        <div class="losslabel" id="lossLabel"><svg class="i" viewBox="0 0 24 24"><path d="M5 12l5 5 9-11"/></svg> <span id="lossTxt">Perdas no último segundo: 0 — perfeito</span></div>
+        <div class="losslabel" id="lossLabel"><svg class="i" viewBox="0 0 24 24"><path d="M5 12l5 5 9-11"/></svg> <span id="lossTxt" data-i18n="loss.ok">Perdas no último segundo: 0 — perfeito</span></div>
       </div>
 
       <div class="counters">
-        <div class="counter"><div class="k"><svg class="i" viewBox="0 0 24 24"><path d="M4 14 9 9l4 4 7-8"/></svg> Ações otimizadas</div><div class="v" id="cActs">0</div></div>
-        <div class="counter"><div class="k"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg> Tempo economizado</div><div class="v" id="cSaved">0<small>s</small></div></div>
+        <div class="counter"><div class="k"><svg class="i" viewBox="0 0 24 24"><path d="M4 14 9 9l4 4 7-8"/></svg> <span data-i18n="counter.actions">Ações otimizadas</span></div><div class="v" id="cActs">0</div></div>
+        <div class="counter"><div class="k"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg> <span data-i18n="counter.saved">Tempo economizado</span></div><div class="v" id="cSaved">0<small>s</small></div></div>
       </div>
 
       <div class="pfoot" id="pfoot" style="display:none">
         <svg class="i" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M11 18h2"/></svg>
-        <span>No celular (mesma rede): <b id="phoneUrl">—</b></span>
-        <button onclick="copyPhone(event)">Copiar</button>
+        <span><span data-i18n="phone.label">No celular (mesma rede):</span> <b id="phoneUrl">—</b></span>
+        <button onclick="copyPhone(event)" data-i18n="btn.copy">Copiar</button>
       </div>
     </div>
 
@@ -393,67 +403,68 @@
     <div class="screen" id="config">
 
       <div class="block">
-        <div class="block-h"><svg class="i" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/></svg> Mitigação</div>
+        <div class="block-h"><svg class="i" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/></svg> <span data-i18n="cfg.mitigation">Mitigação</span></div>
         <div class="ctrl">
-          <div class="txt"><b id="mitLbl">Mitigação ligada</b><small id="mitSub">Cortando o atraso das habilidades em tempo real.</small></div>
+          <div class="txt"><b id="mitLbl" data-i18n="cfg.mitOn">Mitigação ligada</b><small id="mitSub" data-i18n="cfg.mitSubOn">Cortando o atraso das habilidades em tempo real.</small></div>
           <div class="switch on" id="swMit" onclick="toggleMit()"></div>
         </div>
         <div class="slider-wrap">
           <div class="slider-head">
-            <div class="v"><span id="mval">75</span><small>ms de margem</small></div>
-            <div class="tag" id="mtag">recomendado</div>
+            <div class="v"><span id="mval">75</span><small data-i18n="cfg.marginUnit">ms de margem</small></div>
+            <div class="tag" id="mtag" data-i18n="tag.recommended">recomendado</div>
           </div>
           <input type="range" min="60" max="150" step="5" value="75" id="margin" oninput="onMargin(this.value)" onchange="onMargin(this.value)">
-          <div class="scalelbl"><span>↑ resposta</span><span>equilíbrio</span><span>segurança ↑</span></div>
-          <div class="hintbox">Folga de segurança antes da próxima ação. <b>Menor</b> = ganho maior, porém arriscado. <b>75&nbsp;ms</b> é o recomendado.</div>
+          <div class="scalelbl"><span data-i18n="scale.response">↑ resposta</span><span data-i18n="scale.balance">equilíbrio</span><span data-i18n="scale.safety">segurança ↑</span></div>
+          <div class="hintbox" data-i18n-html="cfg.marginHint">Folga de segurança antes da próxima ação. <b>Menor</b> = ganho maior, porém arriscado. <b>75&nbsp;ms</b> é o recomendado.</div>
         </div>
         <div class="ctrl" style="border-top:1px solid var(--line-soft);margin-top:8px">
-          <div class="txt"><b>Anti-travamento (QoS)</b><small>Se algo no PC usar muita internet, prioriza o tráfego do jogo pra não engasgar.</small></div>
+          <div class="txt"><b data-i18n="cfg.qos">Anti-travamento (QoS)</b><small data-i18n="cfg.qosSub">Se algo no PC usar muita internet, prioriza o tráfego do jogo pra não engasgar.</small></div>
           <div class="switch" id="swQos" onclick="toggleQos()"></div>
         </div>
       </div>
 
       <div class="accord" id="accSetup">
-        <div class="accord-h" onclick="acc('accSetup')"><svg class="i lead" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="9" rx="4.5"/><path d="M7.5 12.5h2.5M8.75 11.25v2.5M16 12h.01M17.6 13.5h.01"/></svg><b>Como conectar o PS5</b><svg class="i chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></div>
+        <div class="accord-h" onclick="acc('accSetup')"><svg class="i lead" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="9" rx="4.5"/><path d="M7.5 12.5h2.5M8.75 11.25v2.5M16 12h.01M17.6 13.5h.01"/></svg><b data-i18n="setup.title">Como conectar o PS5</b><svg class="i chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></div>
         <div class="accord-b">
-          <div class="step"><span class="num">1</span><div class="t">Ligue o PC e abra o Mitigus.<small>deixe rodando enquanto joga</small></div></div>
-          <div class="step"><span class="num">2</span><div class="t">No PS5: <b>Rede → Configurar Internet → Manual</b><small>aponte o <b>Gateway padrão</b> para este PC:</small>
-            <div class="ipbox"><code id="pcip2">—</code><button onclick="copyIp(event)">copiar</button></div></div></div>
-          <div class="step"><span class="num">3</span><div class="t">DNS primário <b>1.1.1.1</b>, salve e teste.<small>quando aparecer “Jogo ativo” no Painel, está funcionando</small></div></div>
+          <div class="step"><span class="num">1</span><div class="t"><span data-i18n="setup.s1">Ligue o PC e abra o Mitigus.</span><small data-i18n="setup.s1s">deixe rodando enquanto joga</small></div></div>
+          <div class="step"><span class="num">2</span><div class="t"><span data-i18n-html="setup.s2">No PS5: <b>Rede → Configurar Internet → Manual</b></span><small data-i18n-html="setup.s2s">aponte o <b>Gateway padrão</b> para este PC:</small>
+            <div class="ipbox"><code id="pcip2">—</code><button onclick="copyIp(event)" data-i18n="btn.copyLower">copiar</button></div></div></div>
+          <div class="step"><span class="num">3</span><div class="t"><span data-i18n-html="setup.s3">DNS primário <b>1.1.1.1</b>, salve e teste.</span><small data-i18n="setup.s3s">quando aparecer “Jogo ativo” no Painel, está funcionando</small></div></div>
         </div>
       </div>
 
       <div class="accord open" id="accHealth">
-        <div class="accord-h" onclick="acc('accHealth')"><svg class="i lead" viewBox="0 0 24 24"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg><b>Status do sistema</b><svg class="i chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></div>
+        <div class="accord-h" onclick="acc('accHealth')"><svg class="i lead" viewBox="0 0 24 24"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg><b data-i18n="health.title">Status do sistema</b><svg class="i chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></div>
         <div class="accord-b" id="checks">
-          <div class="check wait" data-k="admin"><span class="cd">!</span><span class="lbl">Administrador</span><span class="st">—</span></div>
-          <div class="check wait" data-k="routing"><span class="cd">!</span><span class="lbl">PC como roteador</span><span class="st">—</span></div>
-          <div class="check wait" data-k="oodle"><span class="cd">!</span><span class="lbl">Decodificador (ffxiv_dx11.exe)</span><span class="st">—</span></div>
-          <div class="check wait" data-k="opcodes"><span class="cd">!</span><span class="lbl">Opcodes do jogo</span><button class="mini" onclick="updateOpcodes(event)"><svg class="i" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 4v4h-4"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16M3 20v-4h4"/></svg>atualizar</button><span class="st">—</span></div>
-          <div class="check wait" data-k="ps5"><span class="cd">!</span><span class="lbl">PS5 conectado</span><span class="st">aguardando…</span></div>
+          <div class="check wait" data-k="admin"><span class="cd">!</span><span class="lbl" data-i18n="check.admin">Administrador</span><span class="st">—</span></div>
+          <div class="check wait" data-k="routing"><span class="cd">!</span><span class="lbl" data-i18n="check.routing">PC como roteador</span><span class="st">—</span></div>
+          <div class="check wait" data-k="oodle"><span class="cd">!</span><span class="lbl" data-i18n="check.oodle">Decodificador (ffxiv_dx11.exe)</span><span class="st">—</span></div>
+          <div class="check wait" data-k="opcodes"><span class="cd">!</span><span class="lbl" data-i18n="check.opcodes">Opcodes do jogo</span><button class="mini" onclick="updateOpcodes(event)"><svg class="i" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 4v4h-4"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16M3 20v-4h4"/></svg><span data-i18n="btn.update">atualizar</span></button><span class="st">—</span></div>
+          <div class="check wait" data-k="ps5"><span class="cd">!</span><span class="lbl" data-i18n="check.ps5">PS5 conectado</span><span class="st" data-i18n="check.waiting">aguardando…</span></div>
           <div class="warnbox" id="oodleHint" style="display:none"></div>
         </div>
       </div>
 
       <div class="accord" id="accRoute">
-        <div class="accord-h" onclick="acc('accRoute')"><svg class="i lead" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 2.5 15 0 18M12 3c-2.5 2.5-2.5 15 0 18"/></svg><b>Rota avançada (VPS)</b><span class="pill" id="routePill">desligada</span><svg class="i chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></div>
+        <div class="accord-h" onclick="acc('accRoute')"><svg class="i lead" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 2.5 15 0 18M12 3c-2.5 2.5-2.5 15 0 18"/></svg><b data-i18n="route.title">Rota avançada (GPN / VPS)</b><span class="pill" id="routePill" data-i18n="route.off">desligada</span><svg class="i chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></div>
         <div class="accord-b">
-          <div class="warnbox" style="margin-top:10px"><b>Só mexa se você sabe o que é.</b> Manda o tráfego do jogo por um servidor seu (VPS) que pode ter rota melhor até o NA. Errar aqui derruba a conexão. Opcional — sem VPS, deixe desligada.</div>
-          <div class="ctrl" style="border-top:none"><div class="txt"><b>Usar rota por VPS (SOCKS5)</b></div><div class="switch" id="swRoute" onclick="toggleRoute()"></div></div>
-          <div class="rfields"><input type="text" id="routeHost" placeholder="IP ou host do VPS" autocomplete="off"><input type="number" id="routePort" placeholder="porta" value="1080"></div>
-          <button class="btn-primary" onclick="saveRoute()"><svg class="i" viewBox="0 0 24 24"><path d="M5 12l5 5 9-11"/></svg>salvar rota</button>
+          <div class="ctrl" style="border-top:none"><div class="txt"><b data-i18n="route.gpn">Modo GPN</b><small data-i18n-html="route.gpnSub">Deixe seu <b>ExitLag, NoPing ou Mudfish</b> otimizar a rota do console. Ligue o GPN aqui no PC e selecione o FFXIV — o Mitigus entrega o tráfego do jogo pra ele, como se o console fosse o PC.</small></div><div class="switch" id="swGpn" onclick="toggleGpn()"></div></div>
+          <div class="warnbox" style="margin-top:4px" data-i18n-html="route.vpsWarn"><b>Avançado — VPS próprio.</b> Em vez de um GPN, manda o tráfego do jogo por um servidor seu (VPS) via SOCKS5. Errar aqui derruba a conexão. Os dois não ligam juntos. Sem VPS, deixe desligado.</div>
+          <div class="ctrl"><div class="txt"><b data-i18n="route.vps">Usar rota por VPS (SOCKS5)</b></div><div class="switch" id="swRoute" onclick="toggleRoute()"></div></div>
+          <div class="rfields" id="rfields"><input type="text" id="routeHost" data-i18n-ph="route.hostPh" placeholder="IP ou host do VPS" autocomplete="off"><input type="number" id="routePort" data-i18n-ph="route.portPh" placeholder="porta" value="1080"></div>
+          <button class="btn-primary" id="btnSaveRoute" onclick="saveRoute()"><svg class="i" viewBox="0 0 24 24"><path d="M5 12l5 5 9-11"/></svg><span data-i18n="btn.saveRoute">salvar rota</span></button>
         </div>
       </div>
 
       <div class="accord" id="accLog">
-        <div class="accord-h" onclick="acc('accLog')"><svg class="i lead" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg><b>Registro de eventos</b><svg class="i chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></div>
+        <div class="accord-h" onclick="acc('accLog')"><svg class="i lead" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg><b data-i18n="log.title">Registro de eventos</b><svg class="i chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></div>
         <div class="accord-b">
-          <div class="log" id="log">aguardando…</div>
+          <div class="log" id="log" data-i18n="log.waiting">aguardando…</div>
           <div class="logpath" id="logpath"></div>
         </div>
       </div>
 
-      <div class="note">Painel só na sua rede local. <b>Nunca</b> exponha esta porta à internet.<br>Ferramenta de mitigação de latência — uso por sua conta e risco.</div>
+      <div class="note" data-i18n-html="note">Painel só na sua rede local. <b>Nunca</b> exponha esta porta à internet.<br>Ferramenta de mitigação de latência — uso por sua conta e risco.</div>
     </div>
 
    </div>
@@ -464,6 +475,167 @@ const $=id=>document.getElementById(id);
 const IS_APP=new URLSearchParams(location.search).has("app");
 document.documentElement.classList.toggle("is-app",IS_APP);
 let slidingUntil=0,lastN=null,routeInit=false;
+
+/* ── i18n (EN/PT/ES) — função tr() (não "t", que colide com a telemetria) ── */
+const LOCALE={en:"en-US",pt:"pt-BR",es:"es-ES"};
+const MSG={
+ en:{
+  "nav.panel":"Dashboard","nav.config":"Settings",
+  "win.min":"Minimize","win.max":"Maximize","win.close":"Close (to tray)","win.drag":"drag to move",
+  "offline":"No connection to Mitigus. Retrying…",
+  "reboot.title":"Windows restart needed","reboot.body":"Restart once so the console accepts the PC as gateway. If it already connects, ignore this.",
+  "reboot.btn":"Restart","reboot.confirm":"Restart Windows now? Save your files first.","reboot.alert":"Windows will restart in 20 seconds.",
+  "status.mitigating":"Mitigating","status.paused":"Paused","status.serverLabel":"Server:",
+  "game.waiting0":"waiting","game.active":"Game active","game.idle":"game idle","game.waiting":"waiting for game",
+  "hero.label":"Animation lock · last cut","hero.chip":"−{n} ms per action",
+  "hero.cap0":"Each ability frees up sooner — you can fit the next skill in (double weave).",
+  "hero.cap":"Each ability frees up ~{n} ms sooner — you can fit the next skill in (double weave).",
+  "hero.emptyT0":"All set.","hero.emptyS0":"Enter combat to see cuts live.",
+  "hero.emptyTready":"Ready for combat.","hero.emptySready":"Use an ability to see cuts live.",
+  "hero.emptyTopen":"Open FFXIV.","hero.emptySopen":"When the game connects, cuts appear here.",
+  "sec.latency":"Latency",
+  "ping.net":"Your connection","ping.netSub":"PC → server → PC","ping.netOsc":"fluctuating now",
+  "ping.best":"best case","ping.stability":"stability",
+  "ping.game":"In-game ping","ping.gameSub":"press → happen","ping.peaks":"peaks","ping.normal":"normal","ping.forDistance":"for the distance",
+  "connector":"The <b>in-game ping</b> is higher because it includes the time for the server to process the ability. Both are round-trip — you do <b>not</b> add them together.",
+  "explain.title":"Why do I have two different numbers?",
+  "explain.body":"Your <code>connection</code> is just your internet: the time to reach the server and come back. The <code>in-game ping</code> is higher because it includes the time for the FFXIV server to think and respond to your action — it is not your internet being bad, it is the same for everyone. Mitigus works on top of the <code>in-game ping</code>: it subtracts the network-travel part from the animation lock, and that is why you fit two skills where only one fit before.",
+  "loss.ok":"Losses in the last second: 0 — perfect","loss.bad":"Losses in the last second: {n} — there is packet loss on the line now",
+  "counter.actions":"Optimized actions","counter.saved":"Time saved",
+  "phone.label":"On your phone (same network):","btn.copy":"Copy","btn.copyLower":"copy","btn.copied":"copied!","btn.update":"update","btn.error":"error","btn.saveRoute":"save route",
+  "cfg.mitigation":"Mitigation","cfg.mitOn":"Mitigation on","cfg.mitOff":"Mitigation paused",
+  "cfg.mitSubOn":"Cutting ability delay in real time.","cfg.mitSubOff":"Paused — the delay goes back to normal.",
+  "cfg.marginUnit":"ms margin",
+  "tag.aggressive":"aggressive","tag.recommended":"recommended","tag.safe":"safe","tag.verysafe":"very safe",
+  "scale.response":"↑ response","scale.balance":"balance","scale.safety":"safety ↑",
+  "cfg.marginHint":"Safety buffer before the next action. <b>Lower</b> = bigger gain, but riskier. <b>75&nbsp;ms</b> is recommended.",
+  "cfg.qos":"Anti-stutter (QoS)","cfg.qosSub":"If something on the PC hogs the internet, it prioritizes game traffic so it does not stutter.",
+  "setup.title":"How to connect the PS5",
+  "setup.s1":"Turn on the PC and open Mitigus.","setup.s1s":"keep it running while you play",
+  "setup.s2":"On PS5: <b>Network → Set Up Internet → Manual</b>","setup.s2s":"point the <b>Default Gateway</b> to this PC:",
+  "setup.s3":"Primary DNS <b>1.1.1.1</b>, save and test.","setup.s3s":"when “Game active” shows on the Dashboard, it is working",
+  "health.title":"System status",
+  "check.admin":"Administrator","check.routing":"PC as router","check.oodle":"Decoder (ffxiv_dx11.exe)","check.opcodes":"Game opcodes","check.ps5":"PS5 connected",
+  "check.waiting":"waiting…","check.ok":"ok","check.runAdmin":"run as Admin","check.on":"on","check.rebootPc":"restart the PC",
+  "check.loaded":"loaded","check.missingExe":"ffxiv_dx11.exe missing","check.notCover":"does not cover your server",
+  "check.activeConns":"{n} active connection(s)","check.idleNoTraffic":"idle (no game traffic now)",
+  "check.oodleHint":"Put <b>ffxiv_dx11.exe</b> in this folder:<br><b>{path}</b><br>then close and reopen the program.",
+  "route.title":"Advanced route (GPN / VPS)","route.off":"off","route.viaGpn":"via GPN","route.viaVps":"via VPS",
+  "route.gpn":"GPN mode","route.gpnSub":"Let your <b>ExitLag, NoPing or Mudfish</b> optimize the console's route. Turn the GPN on here on the PC and select FFXIV — Mitigus hands the game traffic to it, as if the console were the PC.",
+  "route.vpsWarn":"<b>Advanced — your own VPS.</b> Instead of a GPN, it sends game traffic through your own server (VPS) via SOCKS5. Getting this wrong drops the connection. The two cannot be on at once. Without a VPS, leave it off.",
+  "route.vps":"Use VPS route (SOCKS5)","route.hostPh":"VPS IP or host","route.portPh":"port",
+  "log.title":"Event log","log.waiting":"waiting…","log.empty":"(no events yet)","log.path":"Everything is saved to <b>{path}</b> — send this file for analysis.",
+  "note":"Dashboard is on your local network only. <b>Never</b> expose this port to the internet.<br>Latency-mitigation tool — use at your own risk."
+ },
+ pt:{
+  "nav.panel":"Painel","nav.config":"Configuração",
+  "win.min":"Minimizar","win.max":"Maximizar","win.close":"Fechar (vai pra bandeja)","win.drag":"arraste para mover",
+  "offline":"Sem conexão com o Mitigus. Tentando de novo…",
+  "reboot.title":"Falta reiniciar o Windows","reboot.body":"Reinicie 1x pro console aceitar o PC como gateway. Se já conecta, pode ignorar.",
+  "reboot.btn":"Reiniciar","reboot.confirm":"Reiniciar o Windows agora? Salve seus arquivos antes.","reboot.alert":"O Windows vai reiniciar em 20 segundos.",
+  "status.mitigating":"Mitigando","status.paused":"Pausado","status.serverLabel":"Servidor:",
+  "game.waiting0":"aguardando","game.active":"Jogo ativo","game.idle":"jogo ocioso","game.waiting":"aguardando jogo",
+  "hero.label":"Trava de animação · último corte","hero.chip":"−{n} ms por ação",
+  "hero.cap0":"Cada habilidade libera mais cedo — dá pra encaixar a próxima skill (double weave).",
+  "hero.cap":"Cada habilidade libera ~{n} ms mais cedo — dá pra encaixar a próxima skill (double weave).",
+  "hero.emptyT0":"Tudo pronto.","hero.emptyS0":"Entre em combate para ver os cortes ao vivo.",
+  "hero.emptyTready":"Pronto pro combate.","hero.emptySready":"Use uma habilidade para ver os cortes ao vivo.",
+  "hero.emptyTopen":"Abra o FFXIV.","hero.emptySopen":"Quando o jogo conectar, os cortes aparecem aqui.",
+  "sec.latency":"Latência",
+  "ping.net":"Sua conexão","ping.netSub":"PC → servidor → PC","ping.netOsc":"oscilando agora",
+  "ping.best":"melhor caso","ping.stability":"estabilidade",
+  "ping.game":"Ping no jogo","ping.gameSub":"apertar → acontecer","ping.peaks":"picos","ping.normal":"normal","ping.forDistance":"pra distância",
+  "connector":"O <b>ping no jogo</b> é maior porque inclui o tempo do servidor processar a habilidade. Os dois são ida-e-volta — você <b>não</b> soma um ao outro.",
+  "explain.title":"Por que tenho dois números diferentes?",
+  "explain.body":"<code>Sua conexão</code> é só a sua internet: o tempo de ir até o servidor e voltar. O <code>Ping no jogo</code> é maior porque inclui o tempo do servidor do FFXIV pensar e responder à sua ação — não é a sua internet ruim, é assim pra todo mundo. O Mitigus trabalha em cima do <code>Ping no jogo</code>: desconta a parte da viagem de rede da trava de animação, e é por isso que você encaixa duas skills onde antes só cabia uma.",
+  "loss.ok":"Perdas no último segundo: 0 — perfeito","loss.bad":"Perdas no último segundo: {n} — tem perda na linha agora",
+  "counter.actions":"Ações otimizadas","counter.saved":"Tempo economizado",
+  "phone.label":"No celular (mesma rede):","btn.copy":"Copiar","btn.copyLower":"copiar","btn.copied":"copiado!","btn.update":"atualizar","btn.error":"erro","btn.saveRoute":"salvar rota",
+  "cfg.mitigation":"Mitigação","cfg.mitOn":"Mitigação ligada","cfg.mitOff":"Mitigação pausada",
+  "cfg.mitSubOn":"Cortando o atraso das habilidades em tempo real.","cfg.mitSubOff":"Pausada — o atraso volta ao normal.",
+  "cfg.marginUnit":"ms de margem",
+  "tag.aggressive":"agressivo","tag.recommended":"recomendado","tag.safe":"seguro","tag.verysafe":"bem seguro",
+  "scale.response":"↑ resposta","scale.balance":"equilíbrio","scale.safety":"segurança ↑",
+  "cfg.marginHint":"Folga de segurança antes da próxima ação. <b>Menor</b> = ganho maior, porém arriscado. <b>75&nbsp;ms</b> é o recomendado.",
+  "cfg.qos":"Anti-travamento (QoS)","cfg.qosSub":"Se algo no PC usar muita internet, prioriza o tráfego do jogo pra não engasgar.",
+  "setup.title":"Como conectar o PS5",
+  "setup.s1":"Ligue o PC e abra o Mitigus.","setup.s1s":"deixe rodando enquanto joga",
+  "setup.s2":"No PS5: <b>Rede → Configurar Internet → Manual</b>","setup.s2s":"aponte o <b>Gateway padrão</b> para este PC:",
+  "setup.s3":"DNS primário <b>1.1.1.1</b>, salve e teste.","setup.s3s":"quando aparecer “Jogo ativo” no Painel, está funcionando",
+  "health.title":"Status do sistema",
+  "check.admin":"Administrador","check.routing":"PC como roteador","check.oodle":"Decodificador (ffxiv_dx11.exe)","check.opcodes":"Opcodes do jogo","check.ps5":"PS5 conectado",
+  "check.waiting":"aguardando…","check.ok":"ok","check.runAdmin":"rode como Admin","check.on":"ligado","check.rebootPc":"reinicie o PC",
+  "check.loaded":"carregado","check.missingExe":"falta o ffxiv_dx11.exe","check.notCover":"não cobre seu servidor",
+  "check.activeConns":"{n} conexão(ões) ativa(s)","check.idleNoTraffic":"ocioso (sem tráfego do jogo agora)",
+  "check.oodleHint":"Coloque o <b>ffxiv_dx11.exe</b> nesta pasta:<br><b>{path}</b><br>depois feche e reabra o programa.",
+  "route.title":"Rota avançada (GPN / VPS)","route.off":"desligada","route.viaGpn":"via GPN","route.viaVps":"via VPS",
+  "route.gpn":"Modo GPN","route.gpnSub":"Deixe seu <b>ExitLag, NoPing ou Mudfish</b> otimizar a rota do console. Ligue o GPN aqui no PC e selecione o FFXIV — o Mitigus entrega o tráfego do jogo pra ele, como se o console fosse o PC.",
+  "route.vpsWarn":"<b>Avançado — VPS próprio.</b> Em vez de um GPN, manda o tráfego do jogo por um servidor seu (VPS) via SOCKS5. Errar aqui derruba a conexão. Os dois não ligam juntos. Sem VPS, deixe desligado.",
+  "route.vps":"Usar rota por VPS (SOCKS5)","route.hostPh":"IP ou host do VPS","route.portPh":"porta",
+  "log.title":"Registro de eventos","log.waiting":"aguardando…","log.empty":"(sem eventos ainda)","log.path":"Tudo é salvo em <b>{path}</b> — envie este arquivo para análise.",
+  "note":"Painel só na sua rede local. <b>Nunca</b> exponha esta porta à internet.<br>Ferramenta de mitigação de latência — uso por sua conta e risco."
+ },
+ es:{
+  "nav.panel":"Panel","nav.config":"Configuración",
+  "win.min":"Minimizar","win.max":"Maximizar","win.close":"Cerrar (a la bandeja)","win.drag":"arrastra para mover",
+  "offline":"Sin conexión con Mitigus. Reintentando…",
+  "reboot.title":"Falta reiniciar Windows","reboot.body":"Reinicia una vez para que la consola acepte el PC como puerta de enlace. Si ya conecta, ignóralo.",
+  "reboot.btn":"Reiniciar","reboot.confirm":"¿Reiniciar Windows ahora? Guarda tus archivos antes.","reboot.alert":"Windows se reiniciará en 20 segundos.",
+  "status.mitigating":"Mitigando","status.paused":"Pausado","status.serverLabel":"Servidor:",
+  "game.waiting0":"esperando","game.active":"Juego activo","game.idle":"juego inactivo","game.waiting":"esperando el juego",
+  "hero.label":"Bloqueo de animación · último recorte","hero.chip":"−{n} ms por acción",
+  "hero.cap0":"Cada habilidad se libera antes — puedes encajar la siguiente skill (double weave).",
+  "hero.cap":"Cada habilidad se libera ~{n} ms antes — puedes encajar la siguiente skill (double weave).",
+  "hero.emptyT0":"Todo listo.","hero.emptyS0":"Entra en combate para ver los recortes en vivo.",
+  "hero.emptyTready":"Listo para el combate.","hero.emptySready":"Usa una habilidad para ver los recortes en vivo.",
+  "hero.emptyTopen":"Abre FFXIV.","hero.emptySopen":"Cuando el juego conecte, los recortes aparecen aquí.",
+  "sec.latency":"Latencia",
+  "ping.net":"Tu conexión","ping.netSub":"PC → servidor → PC","ping.netOsc":"fluctuando ahora",
+  "ping.best":"mejor caso","ping.stability":"estabilidad",
+  "ping.game":"Ping en el juego","ping.gameSub":"apretar → ocurrir","ping.peaks":"picos","ping.normal":"normal","ping.forDistance":"para la distancia",
+  "connector":"El <b>ping en el juego</b> es mayor porque incluye el tiempo del servidor para procesar la habilidad. Ambos son ida y vuelta — <b>no</b> los sumes entre sí.",
+  "explain.title":"¿Por qué tengo dos números distintos?",
+  "explain.body":"Tu <code>conexión</code> es solo tu internet: el tiempo de llegar al servidor y volver. El <code>ping en el juego</code> es mayor porque incluye el tiempo que el servidor de FFXIV tarda en pensar y responder a tu acción — no es que tu internet sea mala, es así para todos. Mitigus trabaja sobre el <code>ping en el juego</code>: resta la parte del viaje de red del bloqueo de animación, y por eso encajas dos skills donde antes solo cabía una.",
+  "loss.ok":"Pérdidas en el último segundo: 0 — perfecto","loss.bad":"Pérdidas en el último segundo: {n} — hay pérdida en la línea ahora",
+  "counter.actions":"Acciones optimizadas","counter.saved":"Tiempo ahorrado",
+  "phone.label":"En el celular (misma red):","btn.copy":"Copiar","btn.copyLower":"copiar","btn.copied":"¡copiado!","btn.update":"actualizar","btn.error":"error","btn.saveRoute":"guardar ruta",
+  "cfg.mitigation":"Mitigación","cfg.mitOn":"Mitigación activada","cfg.mitOff":"Mitigación pausada",
+  "cfg.mitSubOn":"Recortando el retardo de las habilidades en tiempo real.","cfg.mitSubOff":"Pausada — el retardo vuelve a la normalidad.",
+  "cfg.marginUnit":"ms de margen",
+  "tag.aggressive":"agresivo","tag.recommended":"recomendado","tag.safe":"seguro","tag.verysafe":"muy seguro",
+  "scale.response":"↑ respuesta","scale.balance":"equilibrio","scale.safety":"seguridad ↑",
+  "cfg.marginHint":"Margen de seguridad antes de la siguiente acción. <b>Menor</b> = mayor ganancia, pero arriesgado. <b>75&nbsp;ms</b> es lo recomendado.",
+  "cfg.qos":"Anti-cortes (QoS)","cfg.qosSub":"Si algo en el PC consume mucha internet, prioriza el tráfico del juego para que no se trabe.",
+  "setup.title":"Cómo conectar la PS5",
+  "setup.s1":"Enciende el PC y abre Mitigus.","setup.s1s":"déjalo abierto mientras juegas",
+  "setup.s2":"En PS5: <b>Red → Configurar Internet → Manual</b>","setup.s2s":"apunta la <b>Puerta de enlace</b> a este PC:",
+  "setup.s3":"DNS primario <b>1.1.1.1</b>, guarda y prueba.","setup.s3s":"cuando aparezca “Juego activo” en el Panel, está funcionando",
+  "health.title":"Estado del sistema",
+  "check.admin":"Administrador","check.routing":"PC como router","check.oodle":"Decodificador (ffxiv_dx11.exe)","check.opcodes":"Opcodes del juego","check.ps5":"PS5 conectada",
+  "check.waiting":"esperando…","check.ok":"ok","check.runAdmin":"ejecuta como Admin","check.on":"activado","check.rebootPc":"reinicia el PC",
+  "check.loaded":"cargado","check.missingExe":"falta ffxiv_dx11.exe","check.notCover":"no cubre tu servidor",
+  "check.activeConns":"{n} conexión(es) activa(s)","check.idleNoTraffic":"inactivo (sin tráfico del juego ahora)",
+  "check.oodleHint":"Coloca <b>ffxiv_dx11.exe</b> en esta carpeta:<br><b>{path}</b><br>luego cierra y vuelve a abrir el programa.",
+  "route.title":"Ruta avanzada (GPN / VPS)","route.off":"desactivada","route.viaGpn":"vía GPN","route.viaVps":"vía VPS",
+  "route.gpn":"Modo GPN","route.gpnSub":"Deja que tu <b>ExitLag, NoPing o Mudfish</b> optimice la ruta de la consola. Activa el GPN aquí en el PC y selecciona FFXIV — Mitigus le entrega el tráfico del juego, como si la consola fuera el PC.",
+  "route.vpsWarn":"<b>Avanzado — tu propio VPS.</b> En lugar de un GPN, envía el tráfico del juego por un servidor tuyo (VPS) vía SOCKS5. Equivocarse aquí tira la conexión. Los dos no se activan juntos. Sin VPS, déjalo desactivado.",
+  "route.vps":"Usar ruta por VPS (SOCKS5)","route.hostPh":"IP o host del VPS","route.portPh":"puerto",
+  "log.title":"Registro de eventos","log.waiting":"esperando…","log.empty":"(sin eventos aún)","log.path":"Todo se guarda en <b>{path}</b> — envía este archivo para análisis.",
+  "note":"El panel está solo en tu red local. <b>Nunca</b> expongas este puerto a internet.<br>Herramienta de mitigación de latencia — úsala bajo tu propia responsabilidad."
+ }
+};
+let LANG="en";
+function detectLang(){const s=localStorage.getItem("mitigus_lang");if(s&&MSG[s])return s;
+  const n=(navigator.language||"en").toLowerCase();if(n.indexOf("pt")===0)return "pt";if(n.indexOf("es")===0)return "es";return "en";}
+function tr(key,vars){let s=(MSG[LANG]&&MSG[LANG][key]!=null)?MSG[LANG][key]:(MSG.en[key]!=null?MSG.en[key]:key);
+  if(vars)for(const k in vars)s=s.split("{"+k+"}").join(vars[k]);return s;}
+function applyI18n(){document.documentElement.lang=LANG;
+  document.querySelectorAll("[data-i18n]").forEach(e=>{e.textContent=tr(e.dataset.i18n)});
+  document.querySelectorAll("[data-i18n-html]").forEach(e=>{e.innerHTML=tr(e.dataset.i18nHtml)});
+  document.querySelectorAll("[data-i18n-ph]").forEach(e=>{e.placeholder=tr(e.dataset.i18nPh)});
+  document.querySelectorAll("[data-i18n-title]").forEach(e=>{e.title=tr(e.dataset.i18nTitle)});}
+function setLang(l){if(!MSG[l])l="en";LANG=l;try{localStorage.setItem("mitigus_lang",l)}catch(e){}applyI18n();
+  fetch("/api/lang?lang="+l,{method:"POST"}).catch(()=>{});refresh();}
 
 async function api(p,o){const r=await fetch(p,o);if(!r.ok)throw 0;return r.json()}
 function fmt(v){return (v===null||v===undefined)?"—":v}
@@ -492,22 +664,31 @@ if(IS_APP){
 async function toggleMit(){try{await api("/api/toggle",{method:"POST"});refresh()}catch(e){}}
 async function toggleQos(){const on=!$("swQos").classList.contains("on");
   try{await api("/api/config?qos="+(on?1:0),{method:"POST"});refresh()}catch(e){}}
-function tag(ms){return ms<70?"agressivo":ms<=85?"recomendado":ms<=110?"seguro":"bem seguro"}
-function onMargin(v){slidingUntil=Date.now()+1600;$("mval").textContent=v;$("mtag").textContent=tag(+v);
+function tag(ms){return ms<70?"tag.aggressive":ms<=85?"tag.recommended":ms<=110?"tag.safe":"tag.verysafe"}
+function onMargin(v){slidingUntil=Date.now()+1600;$("mval").textContent=v;$("mtag").textContent=tr(tag(+v));
   clearTimeout(window._mt);window._mt=setTimeout(()=>{api("/api/config?extra_delay_ms="+v,{method:"POST"}).catch(()=>{})},180)}
-function toggleRoute(){$("swRoute").classList.toggle("on")}
-async function saveRoute(){const on=$("swRoute").classList.contains("on"),host=$("routeHost").value.trim(),port=$("routePort").value||1080;
-  const mode=on?"socks5":"off";
+function showVps(v){const f=$("rfields"),b=$("btnSaveRoute");if(f)f.style.display=v?"grid":"none";if(b)b.style.display=v?"":"none";}
+async function applyRoute(mode){const host=$("routeHost").value.trim(),port=$("routePort").value||1080;
   try{await api("/api/route?mode="+mode+"&host="+encodeURIComponent(host)+"&port="+encodeURIComponent(port),{method:"POST"})}catch(e){}refresh()}
-async function doReboot(){if(!confirm("Reiniciar o Windows agora? Salve seus arquivos antes."))return;
-  try{await api("/api/reboot",{method:"POST"});alert("O Windows vai reiniciar em 20 segundos.")}catch(e){}}
+function toggleGpn(){const on=!$("swGpn").classList.contains("on");
+  $("swGpn").classList.toggle("on",on);
+  if(on){$("swRoute").classList.remove("on");showVps(false);}   /* exclusivo com o VPS */
+  applyRoute(on?"gpn":"off")}                                    /* GPN não tem campos: aplica já */
+function toggleRoute(){const on=!$("swRoute").classList.contains("on");
+  $("swRoute").classList.toggle("on",on);
+  if(on)$("swGpn").classList.remove("on");                       /* exclusivo com o GPN */
+  showVps(on);
+  if(!on)applyRoute("off")}                                      /* ligar VPS exige "salvar rota" (host/porta) */
+async function saveRoute(){applyRoute($("swRoute").classList.contains("on")?"socks5":"off")}
+async function doReboot(){if(!confirm(tr("reboot.confirm")))return;
+  try{await api("/api/reboot",{method:"POST"});alert(tr("reboot.alert"))}catch(e){}}
 async function updateOpcodes(e){e.stopPropagation();const b=e.currentTarget,old=b.innerHTML;b.textContent="…";b.disabled=true;
   let ok=false;try{const r=await api("/api/opcodes/update",{method:"POST"});ok=r.ok!==false}catch(_){ok=false}
-  b.textContent=ok?"✓":"erro";setTimeout(()=>{b.innerHTML=old;b.disabled=false;refresh()},1300)}
+  b.textContent=ok?"✓":tr("btn.error");setTimeout(()=>{b.innerHTML=old;b.disabled=false;refresh()},1300)}
 function copyIp(e){e.stopPropagation();const ip=$("pcip2").textContent;
-  if(ip&&ip!=="—"){navigator.clipboard&&navigator.clipboard.writeText(ip);const b=e.currentTarget,o=b.innerHTML;b.textContent="copiado!";setTimeout(()=>b.innerHTML=o,1200)}}
+  if(ip&&ip!=="—"){navigator.clipboard&&navigator.clipboard.writeText(ip);const b=e.currentTarget,o=b.innerHTML;b.textContent=tr("btn.copied");setTimeout(()=>b.innerHTML=o,1200)}}
 function copyPhone(e){const u=$("phoneUrl").textContent;
-  if(u&&u!=="—"){navigator.clipboard&&navigator.clipboard.writeText(u);const b=e.currentTarget,o=b.textContent;b.textContent="copiado!";setTimeout(()=>b.textContent=o,1200)}}
+  if(u&&u!=="—"){navigator.clipboard&&navigator.clipboard.writeText(u);const b=e.currentTarget,o=b.textContent;b.textContent=tr("btn.copied");setTimeout(()=>b.textContent=o,1200)}}
 
 /* ── helpers de UI ── */
 function setCheck(k,state,txt){const el=document.querySelector('.check[data-k="'+k+'"]');if(!el)return;
@@ -536,11 +717,11 @@ async function refresh(){
 
     /* status strip */
     $("stMitDot").classList.toggle("off",!s.enabled);
-    $("stMit").lastChild.textContent=s.enabled?"Mitigando":"Pausado";
+    $("stMitTxt").textContent=s.enabled?tr("status.mitigating"):tr("status.paused");
     const ga=info.game_active||0;
     $("stGameIco").classList.toggle("idle",!(ga>0));
-    $("stGame").textContent=ga>0?"Jogo ativo":(s.flows>0?"jogo ocioso":"aguardando jogo");
-    $("stSrv").innerHTML=info.server_ip?("Servidor: <b>"+(info.server_region||"?")+"</b>"):"";
+    $("stGame").textContent=ga>0?tr("game.active"):(s.flows>0?tr("game.idle"):tr("game.waiting"));
+    $("stSrv").innerHTML=info.server_ip?(tr("status.serverLabel")+" <b>"+(info.server_region||"?")+"</b>"):"";
 
     /* reboot / aba com aviso */
     const needReboot=!!info.reboot_pending;
@@ -556,22 +737,22 @@ async function refresh(){
       $("heroRow").style.display="flex";$("heroEmpty").style.display="none";
       $("heroCap").style.display="block";
       $("heroN").innerHTML=fmt(n)+'<small>ms</small>';$("heroO").textContent=o+"ms";
-      if(saved>0){$("heroChip").style.display="inline-flex";$("heroChipTxt").textContent="−"+saved+" ms por ação";
-        $("heroCap").textContent="Cada habilidade libera ~"+saved+" ms mais cedo — dá pra encaixar a próxima skill (double weave).";}
+      if(saved>0){$("heroChip").style.display="inline-flex";$("heroChipTxt").textContent=tr("hero.chip",{n:saved});
+        $("heroCap").textContent=tr("hero.cap",{n:saved});}
       else{$("heroChip").style.display="none";}
       if(n!==lastN){$("hero").classList.add("flash");setTimeout(()=>$("hero").classList.remove("flash"),220);lastN=n;}
     }else{
       $("heroRow").style.display="none";$("heroChip").style.display="none";$("heroCap").style.display="none";
       $("heroEmpty").style.display="block";
-      if(ga>0){$("heroEmptyT").textContent="Pronto pro combate.";$("heroEmptyS").textContent="Use uma habilidade para ver os cortes ao vivo.";}
-      else{$("heroEmptyT").textContent="Abra o FFXIV.";$("heroEmptyS").textContent="Quando o jogo conectar, os cortes aparecem aqui.";}
+      if(ga>0){$("heroEmptyT").textContent=tr("hero.emptyTready");$("heroEmptyS").textContent=tr("hero.emptySready");}
+      else{$("heroEmptyT").textContent=tr("hero.emptyTopen");$("heroEmptyS").textContent=tr("hero.emptySopen");}
     }
 
     /* ── Sua conexão (rede) ── */
     const wan=pg.wan_ms,wmin=pg.wan_min_ms,jit=pg.jitter_ms,retr=pg.retrans;
     $("netBig").innerHTML=(wan!=null?Math.round(wan):"—")+'<small>ms</small>';
-    if(wan!=null&&wmin!=null&&(wan-wmin)>40){$("netSub").innerHTML='<span style="color:var(--warn)">oscilando agora</span>';}
-    else{$("netSub").textContent="PC → servidor → PC";}
+    if(wan!=null&&wmin!=null&&(wan-wmin)>40){$("netSub").innerHTML='<span style="color:var(--warn)">'+tr("ping.netOsc")+'</span>';}
+    else{$("netSub").textContent=tr("ping.netSub");}
     $("netMin").innerHTML=(wmin!=null?Math.round(wmin):"—")+'<span style="font-size:11px">ms</span>';
     const jel=$("netJit");
     jel.innerHTML=(jit!=null?Math.round(jit):"—")+'<span style="font-size:11px">ms</span>';
@@ -582,8 +763,8 @@ async function refresh(){
     /* sparkline + perda */
     drawSpark(pg.samples,scol);
     const ll=$("lossLabel");ll.classList.remove("warn","bad");
-    if(retr!=null&&retr>0){ll.classList.add(retr>=3?"bad":"warn");$("lossTxt").textContent="Perdas no último segundo: "+retr+" — tem perda na linha agora";}
-    else{$("lossTxt").textContent="Perdas no último segundo: 0 — perfeito";}
+    if(retr!=null&&retr>0){ll.classList.add(retr>=3?"bad":"warn");$("lossTxt").textContent=tr("loss.bad",{n:retr});}
+    else{$("lossTxt").textContent=tr("loss.ok");}
 
     /* ── Ping no jogo ── */
     const felt=pg.felt_p50_ms!=null?Math.round(pg.felt_p50_ms):(t.last_rtt_ms!=null?t.last_rtt_ms:null);
@@ -591,9 +772,9 @@ async function refresh(){
     $("gamePeak").innerHTML=(pg.felt_p95_ms!=null?Math.round(pg.felt_p95_ms):"—")+'<span style="font-size:11px">ms</span>';
 
     /* contadores */
-    $("cActs").textContent=(t.total_actions||0).toLocaleString("pt-BR");
+    $("cActs").textContent=(t.total_actions||0).toLocaleString(LOCALE[LANG]);
     const sv=(t.total_saved_ms||0)/1000;
-    $("cSaved").innerHTML=sv.toFixed(1).replace(".",",")+'<small>s</small>';
+    $("cSaved").innerHTML=sv.toLocaleString(LOCALE[LANG],{minimumFractionDigits:1,maximumFractionDigits:1})+'<small>s</small>';
 
     /* rodapé celular */
     const pport=location.port||"8080";
@@ -601,40 +782,50 @@ async function refresh(){
 
     /* ── Configuração ── */
     $("swMit").classList.toggle("on",s.enabled);
-    $("mitLbl").textContent=s.enabled?"Mitigação ligada":"Mitigação pausada";
-    $("mitSub").textContent=s.enabled?"Cortando o atraso das habilidades em tempo real.":"Pausada — o atraso volta ao normal.";
-    if(Date.now()>slidingUntil&&s.config){const ms=s.config.extra_delay_ms;$("margin").value=ms;$("mval").textContent=ms;$("mtag").textContent=tag(ms);}
+    $("mitLbl").textContent=s.enabled?tr("cfg.mitOn"):tr("cfg.mitOff");
+    $("mitSub").textContent=s.enabled?tr("cfg.mitSubOn"):tr("cfg.mitSubOff");
+    if(Date.now()>slidingUntil&&s.config){const ms=s.config.extra_delay_ms;$("margin").value=ms;$("mval").textContent=ms;$("mtag").textContent=tr(tag(ms));}
     if(s.config&&typeof s.config.qos!=="undefined")$("swQos").classList.toggle("on",!!s.config.qos);
     $("pcip2").textContent=info.pc_ip||"—";
 
     /* rota */
-    if(s.route){$("routePill").textContent=s.route.mode==="socks5"?"ligada":"desligada";
-      if(!routeInit){routeInit=true;$("swRoute").classList.toggle("on",s.route.mode==="socks5");
+    if(s.route){const m=s.route.mode;
+      $("routePill").textContent=m==="gpn"?tr("route.viaGpn"):m==="socks5"?tr("route.viaVps"):tr("route.off");
+      if(!routeInit){routeInit=true;
+        $("swGpn").classList.toggle("on",m==="gpn");
+        $("swRoute").classList.toggle("on",m==="socks5");
+        showVps(m==="socks5");
         if(s.route.host)$("routeHost").value=s.route.host;if(s.route.port)$("routePort").value=s.route.port;}}
 
     /* checklist */
-    setCheck("admin",info.admin?"ok":"bad",info.admin?"ok":"rode como Admin");
-    setCheck("routing",info.routing?"ok":"bad",info.routing?"ligado":"reinicie o PC");
-    let od="wait",odt="—";if(info.oodle_loaded){od="ok";odt="carregado";}else if(info.oodle_missing){od="bad";odt="falta o ffxiv_dx11.exe";}
+    setCheck("admin",info.admin?"ok":"bad",info.admin?tr("check.ok"):tr("check.runAdmin"));
+    setCheck("routing",info.routing?"ok":"bad",info.routing?tr("check.on"):tr("check.rebootPc"));
+    let od="wait",odt="—";if(info.oodle_loaded){od="ok";odt=tr("check.loaded");}else if(info.oodle_missing){od="bad";odt=tr("check.missingExe");}
     setCheck("oodle",od,odt);
-    let op="wait",opt="—";if(info.opcodes_count>0){if(opcodesBad){op="bad";opt="não cobre seu servidor";}else{op="ok";opt=info.opcodes_date||"carregado";}}
+    let op="wait",opt="—";if(info.opcodes_count>0){if(opcodesBad){op="bad";opt=tr("check.notCover");}else{op="ok";opt=info.opcodes_date||tr("check.loaded");}}
     setCheck("opcodes",op,opt);
     if(info.oodle_missing&&info.vendor_path){$("oodleHint").style.display="block";
-      $("oodleHint").innerHTML='Coloque o <b>ffxiv_dx11.exe</b> nesta pasta:<br><b>'+info.vendor_path+'</b><br>depois feche e reabra o programa.';}
+      $("oodleHint").innerHTML=tr("check.oodleHint",{path:info.vendor_path});}
     else $("oodleHint").style.display="none";
-    if(ga>0)setCheck("ps5","ok",ga+" conexão(ões) ativa(s)");
-    else if(s.flows>0)setCheck("ps5","wait","ocioso (sem tráfego do jogo agora)");
-    else setCheck("ps5","wait","aguardando…");
+    if(ga>0)setCheck("ps5","ok",tr("check.activeConns",{n:ga}));
+    else if(s.flows>0)setCheck("ps5","wait",tr("check.idleNoTraffic"));
+    else setCheck("ps5","wait",tr("check.waiting"));
 
-    $("logpath").innerHTML=info.log_path?('Tudo é salvo em <b>'+info.log_path+'</b> — envie este arquivo para análise.'):'';
+    $("logpath").innerHTML=info.log_path?tr("log.path",{path:info.log_path}):'';
   }catch(e){
     $("offline").classList.add("show");
   }
 }
 async function refreshLog(){try{const d=await api("/api/logs");const el=$("log");
   const bottom=el.scrollHeight-el.scrollTop-el.clientHeight<40;
-  el.textContent=(d.lines&&d.lines.length)?d.lines.join("\n"):"(sem eventos ainda)";
+  el.textContent=(d.lines&&d.lines.length)?d.lines.join("\n"):tr("log.empty");
   if(bottom)el.scrollTop=el.scrollHeight;}catch(e){}}
+
+/* ── arranque ── */
+LANG=detectLang();
+(function(){const ls=$("langSel");if(ls){ls.value=LANG;ls.onchange=()=>setLang(ls.value);}})();
+applyI18n();
+fetch("/api/lang?lang="+LANG,{method:"POST"}).catch(()=>{});
 refresh();refreshLog();setInterval(refresh,1000);setInterval(refreshLog,2000);
 </script>
 </body>

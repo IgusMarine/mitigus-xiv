@@ -12,6 +12,8 @@ import threading
 import time
 from typing import Callable, Optional
 
+from ..i18n import t as _t
+
 
 class ControlHub:
     # limites da margem de segurança (segundos)
@@ -40,7 +42,11 @@ class ControlHub:
         self._prev_rtt_ms: Optional[float] = None
         # ping de REDE (perna PC->servidor), vindo do SIO_TCP_INFO
         self._net = {"wan_ms": None, "wan_min_ms": None, "retrans": None, "updated_at": None}
-        # rota opcional (VPS via SOCKS5) — off por padrão; só o upstream do jogo
+        # rota opcional do upstream do jogo (PC->servidor), off por padrão:
+        #   off    = conexão direta
+        #   socks5 = VPS próprio (host/port abaixo)
+        #   gpn    = deixa o GPN do PC (ExitLag/NoPing/Mudfish) cuidar da rota — o
+        #            relay sai por socket normal e o GPN captura pelos IPs do servidor
         self._route = {"mode": "off", "host": "", "port": 1080}
 
     @staticmethod
@@ -63,13 +69,13 @@ class ControlHub:
     def set_enabled(self, value: bool) -> bool:
         with self._lock:
             self._enabled = bool(value)
-            self._log_locked(f"mitigação {'LIGADA' if self._enabled else 'DESLIGADA'}")
+            self._log_locked(_t("log.mit_on") if self._enabled else _t("log.mit_off"))
             return self._enabled
 
     def toggle(self) -> bool:
         with self._lock:
             self._enabled = not self._enabled
-            self._log_locked(f"mitigação {'LIGADA' if self._enabled else 'DESLIGADA'}")
+            self._log_locked(_t("log.mit_on") if self._enabled else _t("log.mit_off"))
             return self._enabled
 
     # ---- telemetria ------------------------------------------------------
@@ -130,10 +136,10 @@ class ControlHub:
             if extra_delay is not None:
                 ed = max(self.EXTRA_DELAY_MIN, min(self.EXTRA_DELAY_MAX, float(extra_delay)))
                 self._config["extra_delay"] = ed
-                self._log_locked(f"margem de segurança = {int(ed * 1000)}ms")
+                self._log_locked(_t("log.margin", ms=int(ed * 1000)))
             if qos is not None:
                 self._config["qos"] = bool(qos)
-                self._log_locked(f"QoS anti-bufferbloat {'LIGADO' if qos else 'desligado'}")
+                self._log_locked(_t("log.qos_on") if qos else _t("log.qos_off"))
             return dict(self._config)
 
     # ---- rota opcional (VPS) ---------------------------------------------
@@ -144,7 +150,8 @@ class ControlHub:
     def set_route(self, mode=None, host=None, port=None) -> dict:
         with self._lock:
             if mode is not None:
-                self._route["mode"] = "socks5" if mode == "socks5" else "off"
+                # tri-estado; qualquer coisa fora de socks5/gpn vira off (seguro).
+                self._route["mode"] = mode if mode in ("socks5", "gpn") else "off"
             if host is not None:
                 self._route["host"] = str(host).strip()
             if port is not None:
@@ -152,9 +159,11 @@ class ControlHub:
                     self._route["port"] = int(port)
                 except (TypeError, ValueError):
                     pass
-            self._log_locked(
-                f"rota = {self._route['mode']}"
-                + (f" ({self._route['host']}:{self._route['port']})" if self._route["mode"] != "off" else ""))
+            # host:port só importa pro VPS; no gpn/off a rota é a do sistema.
+            target = self._route["mode"]
+            if self._route["mode"] == "socks5":
+                target += f" ({self._route['host']}:{self._route['port']})"
+            self._log_locked(_t("log.route", target=target))
             return dict(self._route)
 
     def set_info(self, **kwargs) -> None:
