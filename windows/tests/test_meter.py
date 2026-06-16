@@ -22,19 +22,30 @@ def make_init(deob, s1, s2, s3):
     return bytes(md)
 
 
-def make_ae_wire(deob, action_id, entries, effect_count=1):
+def make_ae_wire(deob, action_id, entries, effect_count=1, seq=0x10):
     """entries: lista (slot, type, severity, value). Devolve bytes JÁ ofuscados."""
     md = bytearray(140)
     md[2:4] = deob.constants.obfuscated_opcodes["ActionEffect01"].to_bytes(2, "little")
     md[24:28] = action_id.to_bytes(4, "little")
     md[32:36] = struct.pack("<f", 0.6)
-    md[40:42] = (0x10).to_bytes(2, "little")
+    md[40:42] = (seq & 0xFFFF).to_bytes(2, "little")
     md[49] = effect_count
     for slot, etype, sev, val in entries:
         off = EFFECTS_AT + slot * 8
         md[off] = etype
         md[off + 1] = sev
         md[off + 6:off + 8] = (val & 0xFFFF).to_bytes(2, "little")
+    deob.unscrambler.scramble(md, *deob.keygen.keys, deob.keygen.opcode_key_table)
+    return bytes(md)
+
+
+def make_spawn_wire(deob, name, classjob):
+    """PlayerSpawn JÁ ofuscado: nome@610 + classJob@66."""
+    md = bytearray(680)
+    md[2:4] = deob.constants.obfuscated_opcodes["PlayerSpawn"].to_bytes(2, "little")
+    nb = name.encode("utf-8")[:32]
+    md[610:610 + len(nb)] = nb
+    md[66] = classjob
     deob.unscrambler.scramble(md, *deob.keygen.keys, deob.keygen.opcode_key_table)
     return bytes(md)
 
@@ -90,6 +101,27 @@ class MeterFeedTest(unittest.TestCase):
         snap = feed.tracker.snapshot()
         self.assertEqual([a["id"] for a in snap["actors"]], [0xB, 0xA])  # maior dano 1º
         self.assertEqual(snap["total_damage"], 9500)
+
+
+    def test_player_spawn_sets_name_and_job(self):
+        feed = MeterFeed()
+        feed.feed_record(rec(self.init, src=0x1006, ts=0))
+        feed.feed_record(rec(make_spawn_wire(self.gen, "Igus Marine", 27), src=0x1006, ts=0))
+        feed.feed_record(rec(make_ae_wire(self.gen, 0x3f11, [(0, 0x03, 0, 1000)]), src=0x1006, ts=1000))
+        a = feed.tracker.snapshot()["actors"][0]
+        self.assertEqual(a["name"], "Igus Marine")
+        self.assertEqual(a["job"], "SMN")
+
+    def test_self_detected_via_sequence(self):
+        feed = MeterFeed()
+        feed.feed_record(rec(self.init, src=1, ts=0))
+        # server-originated (seq 0, ex.: auto-attack relayado) -> NÃO é você
+        feed.feed_record(rec(make_ae_wire(self.gen, 0x0007, [(0, 0x03, 0, 100)], seq=0), src=0xEE, ts=1000))
+        # ação sua (seq != 0) -> você
+        feed.feed_record(rec(make_ae_wire(self.gen, 0x3f11, [(0, 0x03, 0, 5000)], seq=7), src=0xAA, ts=1100))
+        byid = {a["id"]: a for a in feed.tracker.snapshot()["actors"]}
+        self.assertTrue(byid[0xAA]["is_self"])
+        self.assertFalse(byid[0xEE]["is_self"])
 
 
 class DpsTrackerTest(unittest.TestCase):

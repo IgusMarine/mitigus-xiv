@@ -12,6 +12,7 @@ MESMA lógica (usado em teste e no analisador).
 from __future__ import annotations
 
 from .combat import parse_action_effect
+from .spawn import parse_player_spawn
 from .tracker import DpsTracker
 from ..deob import Deobfuscator
 from ..deob.constants import LATEST
@@ -28,6 +29,7 @@ class MeterFeed:
         self.tracker = tracker or DpsTracker()
         self.deob = Deobfuscator(version)
         self._init_op = self.deob.constants.unknown_obfuscation_init_opcode
+        self._ps_op = self.deob.constants.obfuscated_opcodes.get("PlayerSpawn")
         self._variants = {}
         for name, n in _VARIANT_NAMES:
             op = self.deob.constants.obfuscated_opcodes.get(name)
@@ -61,12 +63,24 @@ class MeterFeed:
         if op == self._init_op:
             self.deob.feed_initializer(md)
             return
-        if op not in self._variants or not self.deob.is_active:
+        if not self.deob.is_active:
+            return
+        if op == self._ps_op:                       # nome + job do ator
+            info = parse_player_spawn(self.deob.unscramble_copy(md))
+            if info:
+                name, job, _ = info
+                self.tracker.set_actor_info(src, name=name, job=job)
+            return
+        if op not in self._variants:
             return
         clean = self.deob.unscramble_copy(md)
         ae = parse_action_effect(clean, self._variants[op])
         if ae is None:
             return
+        # ações suas têm sequence != 0 (as dos outros chegam como server-originated);
+        # é o jeito robusto de marcar "Você", mesmo em party.
+        if ae.source_sequence != 0:
+            self.tracker.mark_self(src)
         for e in ae.effects:
             if e.is_damage:
                 self.tracker.record_damage(
