@@ -8,6 +8,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from mitigus.deob import Deobfuscator
 from mitigus.deob.constants import LATEST
 from mitigus.meter.combat import EFFECTS_AT
+from mitigus.meter.spawn import CLASSJOB_OFFSET, LEVEL_OFFSET
 from mitigus.meter.live import MeterFeed
 from mitigus.meter.tracker import DpsTracker
 
@@ -39,13 +40,14 @@ def make_ae_wire(deob, action_id, entries, effect_count=1, seq=0x10):
     return bytes(md)
 
 
-def make_spawn_wire(deob, name, classjob):
-    """PlayerSpawn JÁ ofuscado: nome@610 + classJob@66."""
+def make_spawn_wire(deob, name, classjob, level=100):
+    """PlayerSpawn JÁ ofuscado: nome@610 + level + classJob."""
     md = bytearray(680)
     md[2:4] = deob.constants.obfuscated_opcodes["PlayerSpawn"].to_bytes(2, "little")
     nb = name.encode("utf-8")[:32]
     md[610:610 + len(nb)] = nb
-    md[66] = classjob
+    md[LEVEL_OFFSET] = level
+    md[CLASSJOB_OFFSET] = classjob
     deob.unscrambler.scramble(md, *deob.keygen.keys, deob.keygen.opcode_key_table)
     return bytes(md)
 
@@ -103,14 +105,15 @@ class MeterFeedTest(unittest.TestCase):
         self.assertEqual(snap["total_damage"], 9500)
 
 
-    def test_player_spawn_sets_name_and_job(self):
+    def test_player_spawn_sets_name_job_level(self):
         feed = MeterFeed()
         feed.feed_record(rec(self.init, src=0x1006, ts=0))
-        feed.feed_record(rec(make_spawn_wire(self.gen, "Igus Marine", 27), src=0x1006, ts=0))
+        feed.feed_record(rec(make_spawn_wire(self.gen, "Igus Marine", 37, level=100), src=0x1006, ts=0))
         feed.feed_record(rec(make_ae_wire(self.gen, 0x3f11, [(0, 0x03, 0, 1000)]), src=0x1006, ts=1000))
         a = feed.tracker.snapshot()["actors"][0]
         self.assertEqual(a["name"], "Igus Marine")
-        self.assertEqual(a["job"], "SMN")
+        self.assertEqual(a["job"], "GNB")
+        self.assertEqual(a["level"], 100)
 
     def test_self_detected_via_sequence(self):
         feed = MeterFeed()

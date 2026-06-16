@@ -137,7 +137,7 @@
     el.innerHTML =
       '<div class="fill"></div><div class="rank"></div>'
       + '<div class="who"><span class="nmrow"><span class="nm"></span><span class="job"></span></span>'
-      + '<span class="sub"><span class="crit"></span><span class="dh"></span></span></div>'
+      + '<span class="sub"><span class="lv"></span><span class="crit"></span><span class="dh"></span></span></div>'
       + '<div class="num"><div class="dps"></div><div class="pct"></div></div>';
     return el;
   }
@@ -171,6 +171,9 @@
       const jt = el.querySelector(".job");
       if(a.job){ jt.textContent = a.job; jt.style.display=""; jt.style.color = c; }
       else { jt.style.display = "none"; }
+      const lv = el.querySelector(".lv");
+      if(a.level){ lv.textContent = "Lv"+a.level; lv.style.display=""; }
+      else { lv.style.display = "none"; }
       el.querySelector(".crit").textContent = "crit "+a.crit.toFixed(0)+"%";
       el.querySelector(".dh").textContent = "DH "+a.dh.toFixed(0)+"%";
       el.querySelector(".dps").textContent = fmt(a.dps);

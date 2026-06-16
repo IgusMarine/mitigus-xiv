@@ -68,8 +68,8 @@ class MeterFeed:
         if op == self._ps_op:                       # nome + job do ator
             info = parse_player_spawn(self.deob.unscramble_copy(md))
             if info:
-                name, job, _ = info
-                self.tracker.set_actor_info(src, name=name, job=job)
+                name, job, _, level = info
+                self.tracker.set_actor_info(src, name=name, job=job, level=level)
             return
         if op not in self._variants:
             return

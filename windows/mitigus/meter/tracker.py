@@ -15,7 +15,7 @@ import time
 
 
 class _Actor:
-    __slots__ = ("id", "damage", "hits", "crit", "dh", "name", "job")
+    __slots__ = ("id", "damage", "hits", "crit", "dh", "name", "job", "level")
 
     def __init__(self, actor_id):
         self.id = actor_id
@@ -25,6 +25,7 @@ class _Actor:
         self.dh = 0
         self.name = None
         self.job = None
+        self.level = None
 
 
 class DpsTracker:
@@ -57,7 +58,7 @@ class DpsTracker:
             a.crit += int(is_crit)
             a.dh += int(is_direct)
 
-    def set_actor_info(self, actor_id, name=None, job=None):
+    def set_actor_info(self, actor_id, name=None, job=None, level=None):
         with self._lock:
             a = self._actors.get(actor_id)
             if a is None:
@@ -66,6 +67,8 @@ class DpsTracker:
                 a.name = name
             if job is not None:
                 a.job = job
+            if level:
+                a.level = level
 
     def mark_self(self, actor_id):
         with self._lock:
@@ -97,6 +100,7 @@ class DpsTracker:
                     "id": a.id,
                     "name": a.name or (f"Você" if a.id == self._self_id else f"{a.id:08X}"),
                     "job": a.job,
+                    "level": a.level,
                     "is_self": a.id == self._self_id,
                     "damage": a.damage,
                     "dps": round(dps, 1),
