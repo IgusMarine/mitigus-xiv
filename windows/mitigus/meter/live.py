@@ -11,9 +11,9 @@ MESMA lógica (usado em teste e no analisador).
 """
 from __future__ import annotations
 
-from .combat import parse_action_effect
+from .combat import parse_action_effect, parse_dot_tick
 from .names import action_job
-from .spawn import parse_player_spawn
+from .spawn import parse_npc_spawn, parse_player_spawn
 from .tracker import DpsTracker
 from ..deob import Deobfuscator
 from ..deob.constants import LATEST
@@ -29,11 +29,15 @@ class MeterFeed:
     def __init__(self, tracker: DpsTracker = None, version: str = LATEST):
         self.tracker = tracker or DpsTracker()
         self.deob = Deobfuscator(version)
+        ops = self.deob.constants.obfuscated_opcodes
         self._init_op = self.deob.constants.unknown_obfuscation_init_opcode
-        self._ps_op = self.deob.constants.obfuscated_opcodes.get("PlayerSpawn")
+        self._ps_op = ops.get("PlayerSpawn")
+        self._ac_op = ops.get("ActorControl")          # tick de DoT (cat 0x605)
+        self._npc_ops = {op for op in (ops.get("NpcSpawn"), ops.get("NpcSpawn2"))
+                         if op is not None}            # pet -> dono
         self._variants = {}
         for name, n in _VARIANT_NAMES:
-            op = self.deob.constants.obfuscated_opcodes.get(name)
+            op = ops.get(name)
             if op is not None:
                 self._variants[op] = n
 
@@ -64,7 +68,24 @@ class MeterFeed:
         if op == self._init_op:
             self.deob.feed_initializer(md)
             return
+        if op == self._ac_op:                       # tick de DoT (texto-claro)
+            dot = parse_dot_tick(md)
+            if dot:
+                caster, amount = dot
+                # crédito vai pro caster (param3), não pro src (= o alvo). DoT de
+                # pet (raro) cai no dono via resolve_pet. count_hit=False: só
+                # dano/DPS, sem mexer no crit%/DH% (tick não traz flag de crit).
+                self.tracker.record_damage(
+                    caster, amount, ts_ms=ts, count_hit=False, resolve_pet=True)
+            return
         if not self.deob.is_active:
+            return
+        if op in self._npc_ops:                     # pet/invocação -> dono
+            owner = parse_npc_spawn(self.deob.unscramble_copy(md))
+            if owner:
+                self.tracker.set_pet_owner(src, owner)
+            else:
+                self.tracker.clear_pet_owner(src)   # ID reciclada como NPC comum
             return
         if op == self._ps_op:                       # nome + job do ator
             info = parse_player_spawn(self.deob.unscramble_copy(md))
@@ -79,16 +100,20 @@ class MeterFeed:
         if ae is None:
             return
         # ações suas têm sequence != 0 (as dos outros chegam como server-originated);
-        # é o jeito robusto de marcar "Você", mesmo em party.
+        # é o jeito robusto de marcar "Você", mesmo em party (pet tem seq 0).
         if ae.source_sequence != 0:
             self.tracker.mark_self(src)
         # job dinâmico: infere pela ação usada (Dosis III -> SGE). Sobrevive a
-        # troca de gearset sem re-zonar, e cobre os outros da party.
-        aj = action_job(ae.action_id)
-        if aj:
-            self.tracker.set_actor_info(src, job=aj)
+        # troca de gearset sem re-zonar, e cobre os outros da party. NÃO infere
+        # pela ação de um pet (resolve(src) != src) p/ não reclassificar o dono.
+        if self.tracker.resolve(src) == src:
+            aj = action_job(ae.action_id)
+            if aj:
+                self.tracker.set_actor_info(src, job=aj)
+        # dano de pet soma na linha do dono (egi/Bahamut/Queen/fada), resolvido
+        # atomicamente dentro do record_damage (resolve_pet).
         for e in ae.effects:
             if e.is_damage:
                 self.tracker.record_damage(
                     src, e.value, e.is_crit, e.is_direct, ts_ms=ts,
-                    action_id=ae.action_id)
+                    action_id=ae.action_id, resolve_pet=True)

@@ -54,6 +54,24 @@ DAMAGE_TYPES = frozenset((EFFECT_DAMAGE, EFFECT_BLOCKED, EFFECT_PARRIED))
 SEV_CRIT = 0x20
 SEV_DIRECT = 0x40
 
+# --- tick de DoT (damage-over-time) via ActorControl ------------------------
+# O dano periódico (a cada ~3s) NÃO vem em ActionEffect — vem num ActorControl
+# com categoria 0x605 (DoT) / 0x604 (HoT). VALIDADO byte-a-byte na captura real
+# (luta.jsonl, GNB com Sonic Break/Bow Shock): no corpo do ActorControl,
+#   category u16 @16 ; param2 u32 @24 = dano agregado do tick ;
+#   param3 u32 @28 = ATOR QUE CAUSOU (o caster) ; param4 @32 = 0xFFFFFFFF.
+# O `src` do segmento é o ALVO (quem perde HP) — por isso o crédito vai pro
+# param3, não pro src. Estas categorias são texto-claro: a desofuscação do
+# ActorControl só mexe em param1 quando a categoria é TargetIcon (34), então dá
+# pra ler sem a chave. HoT (0x604) é cura, fora do DPS. O tick não traz flag de
+# crit (param1=0 na captura), então conta como não-crit (crit% fica conservador
+# em jobs com muito DoT).
+AC_CAT_OFFSET = 16
+AC_PARAM2_OFFSET = 24      # dano do tick
+AC_PARAM3_OFFSET = 28      # caster (quem aplicou o DoT)
+ACTORCONTROL_CAT_DOT = 0x605
+ACTORCONTROL_CAT_HOT = 0x604   # cura periódica — ignorada no DPS
+
 
 def _u16(b, o):
     return int.from_bytes(b[o:o + 2], "little")
@@ -141,3 +159,18 @@ def parse_action_effect(md: bytes, max_targets: int) -> Optional[ActionEffectRes
                 value=value,
             ))
     return res
+
+
+def parse_dot_tick(md: bytes):
+    """De um pacote ActorControl, se for tick de DoT (categoria 0x605) devolve
+    (caster_id, amount); senão None. Lê texto-claro (não precisa desofuscar).
+    HoT (0x604) e demais categorias retornam None."""
+    if len(md) < AC_PARAM3_OFFSET + 4:
+        return None
+    if _u16(md, AC_CAT_OFFSET) != ACTORCONTROL_CAT_DOT:
+        return None
+    amount = _u32(md, AC_PARAM2_OFFSET)
+    caster = _u32(md, AC_PARAM3_OFFSET)
+    if amount <= 0 or caster == 0 or caster == 0xFFFFFFFF:
+        return None
+    return caster, amount

@@ -42,16 +42,24 @@ class DpsTracker:
         self._last_ms = None
         self._actors: dict[int, _Actor] = {}       # stats da luta (resetável)
         self._info: dict[int, dict] = {}           # identidade (PERSISTENTE)
+        self._pet_owner: dict[int, int] = {}       # pet -> dono (PERSISTENTE)
         self._self_id = None
         self.encounters = 0
 
     # ---- entrada de dados (chamado pela ponte ao vivo) -------------------
     def record_damage(self, actor_id, value, is_crit=False, is_direct=False,
-                      ts_ms=None, action_id=0):
+                      ts_ms=None, action_id=0, count_hit=True, resolve_pet=False):
+        # count_hit=False (tick de DoT): soma no dano/DPS mas NÃO conta como hit
+        # — o pacote do tick não traz flag de crit/DH, então contá-lo poluiria o
+        # crit%/DH% (que devem refletir os golpes diretos, como no ACT).
+        # resolve_pet=True: resolve pet->dono AQUI DENTRO do lock, pra atribuição
+        # não correr com um set_pet_owner concorrente (TOCTOU).
         if value <= 0:
             return
         ts = ts_ms if ts_ms is not None else int(time.time() * 1000)
         with self._lock:
+            if resolve_pet:
+                actor_id = self._pet_owner.get(actor_id, actor_id)
             if self._last_ms is not None and (ts - self._last_ms) > self._idle_reset_ms:
                 self._reset_locked()
             if self._start_ms is None:
@@ -62,9 +70,10 @@ class DpsTracker:
             if a is None:
                 a = self._actors[actor_id] = _Actor(actor_id)
             a.damage += value
-            a.hits += 1
-            a.crit += int(is_crit)
-            a.dh += int(is_direct)
+            if count_hit:
+                a.hits += 1
+                a.crit += int(is_crit)
+                a.dh += int(is_direct)
             if action_id:
                 a.actions[action_id] = a.actions.get(action_id, 0) + value
 
@@ -82,6 +91,26 @@ class DpsTracker:
     def mark_self(self, actor_id):
         with self._lock:
             self._self_id = actor_id
+
+    def set_pet_owner(self, pet_id, owner_id):
+        # pet (egi/Bahamut/Queen/fada) -> dono. PERSISTENTE: sobrevive ao reset,
+        # senão o dano do pet voltaria a virar uma linha-fantasma na luta nova.
+        if owner_id and pet_id and pet_id != owner_id:
+            with self._lock:
+                self._pet_owner[pet_id] = owner_id
+
+    def clear_pet_owner(self, actor_id):
+        # ID reciclada como NPC comum (FFXIV reusa GameObjectIds): some o
+        # mapeamento antigo, senão o dano do novo NPC seria creditado ao dono
+        # do pet que tinha essa ID. Chamado quando chega NpcSpawn com owner=0.
+        with self._lock:
+            self._pet_owner.pop(actor_id, None)
+
+    def resolve(self, actor_id):
+        # se for um pet conhecido, devolve o dono; senão o próprio ator. Assim o
+        # dano do pet/DoT soma na linha do dono em vez de criar um ator separado.
+        with self._lock:
+            return self._pet_owner.get(actor_id, actor_id)
 
     def reset(self):
         # zera só a luta; mantém identidade (você continua sendo você).

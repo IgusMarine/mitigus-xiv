@@ -52,6 +52,28 @@ def make_spawn_wire(deob, name, classjob, level=100):
     return bytes(md)
 
 
+def make_dot_wire(deob, caster, amount, cat=0x605):
+    """Tick de DoT via ActorControl. A categoria 0x605 (DoT) é texto-claro (o
+    deob não a toca), então NÃO precisa ofuscar: param2@24=dano, param3@28=caster."""
+    md = bytearray(40)
+    md[2:4] = deob.constants.obfuscated_opcodes["ActorControl"].to_bytes(2, "little")
+    md[16:18] = (cat & 0xFFFF).to_bytes(2, "little")
+    md[24:28] = (amount & 0xFFFFFFFF).to_bytes(4, "little")    # param2 = dano
+    md[28:32] = (caster & 0xFFFFFFFF).to_bytes(4, "little")    # param3 = caster
+    md[32:36] = (0xFFFFFFFF).to_bytes(4, "little")             # param4 sentinela
+    return bytes(md)
+
+
+def make_npc_spawn_wire(deob, owner, which="NpcSpawn"):
+    """NpcSpawn JÁ ofuscado com Companion Owner@96 (o id do pet vem do src do
+    segmento, não do corpo)."""
+    md = bytearray(560)
+    md[2:4] = deob.constants.obfuscated_opcodes[which].to_bytes(2, "little")
+    md[96:100] = (owner & 0xFFFFFFFF).to_bytes(4, "little")    # Companion Owner
+    deob.unscrambler.scramble(md, *deob.keygen.keys, deob.keygen.opcode_key_table)
+    return bytes(md)
+
+
 def rec(md, src, ts, direction="s2c"):
     return {"dir": direction, "ts": ts, "src": src,
             "op": int.from_bytes(md[2:4], "little"), "data": bytes(md).hex()}
@@ -136,6 +158,66 @@ class MeterFeedTest(unittest.TestCase):
         a = feed.tracker.snapshot()["actors"][0]
         self.assertEqual(a["top_action"], action_name(36937))  # robusto c/ ou sem actions.json
 
+    def test_dot_credited_to_caster_not_target(self):
+        # tick de DoT: o src do segmento é o ALVO; o crédito vai pro caster (param3).
+        feed = MeterFeed()
+        feed.feed_record(rec(self.init, src=1, ts=0))
+        feed.feed_record(rec(make_dot_wire(self.gen, caster=0xAA, amount=1234),
+                             src=0xBEEF, ts=1000))   # src = inimigo
+        snap = feed.tracker.snapshot()
+        self.assertEqual(snap["total_damage"], 1234)
+        ids = [a["id"] for a in snap["actors"]]
+        self.assertIn(0xAA, ids)            # creditado ao caster
+        self.assertNotIn(0xBEEF, ids)       # NÃO ao alvo (src)
+        a = next(a for a in snap["actors"] if a["id"] == 0xAA)
+        self.assertEqual(a["damage"], 1234)
+        self.assertEqual(a["hits"], 0)      # DoT não conta como hit
+        self.assertEqual(a["crit"], 0.0)
+
+    def test_dot_works_without_initializer(self):
+        # ActorControl cat 0x605 é texto-claro -> DoT funciona mesmo sem a chave.
+        feed = MeterFeed()
+        feed.feed_record(rec(make_dot_wire(self.gen, caster=0xAA, amount=500),
+                             src=0xBEEF, ts=1000))
+        self.assertEqual(feed.tracker.snapshot()["total_damage"], 500)
+
+    def test_other_actorcontrol_categories_ignored(self):
+        # HoT (0x604), TargetIcon (34) e outras categorias NÃO entram no DPS.
+        feed = MeterFeed()
+        feed.feed_record(rec(self.init, src=1, ts=0))
+        for cat in (0x604, 34, 0, 0x15):
+            feed.feed_record(rec(make_dot_wire(self.gen, caster=0xAA, amount=999, cat=cat),
+                                 src=0xBEEF, ts=1000))
+        self.assertEqual(feed.tracker.snapshot()["total_damage"], 0)
+
+    def test_pet_damage_rolls_into_owner(self):
+        # NpcSpawn marca pet->dono; o ActionEffect do pet soma na linha do dono,
+        # sem criar uma linha-fantasma do pet.
+        feed = MeterFeed()
+        feed.feed_record(rec(self.init, src=1, ts=0))
+        feed.feed_record(rec(make_npc_spawn_wire(self.gen, owner=0x1006),
+                             src=0x4000, ts=0))       # pet id = 0x4000, dono = 0x1006
+        feed.feed_record(rec(make_ae_wire(self.gen, 0x100, [(0, 0x03, 0, 7000)]),
+                             src=0x4000, ts=1000))    # dano do pet
+        snap = feed.tracker.snapshot()
+        self.assertEqual([a["id"] for a in snap["actors"]], [0x1006])  # só o dono
+        self.assertEqual(snap["actors"][0]["damage"], 7000)
+
+    def test_recycled_id_cleared_when_respawned_as_npc(self):
+        # ID de pet reciclada como NPC comum (owner=0) limpa o mapeamento, senão
+        # o dano do novo inimigo seria creditado ao dono antigo.
+        feed = MeterFeed()
+        feed.feed_record(rec(self.init, src=1, ts=0))
+        feed.feed_record(rec(make_npc_spawn_wire(self.gen, owner=0x1006),
+                             src=0x4000, ts=0))         # pet 0x4000 -> dono 0x1006
+        feed.feed_record(rec(make_npc_spawn_wire(self.gen, owner=0),
+                             src=0x4000, ts=100))       # 0x4000 reciclada (NPC comum)
+        feed.feed_record(rec(make_ae_wire(self.gen, 0x100, [(0, 0x03, 0, 3000)]),
+                             src=0x4000, ts=1000))      # dano agora é do próprio 0x4000
+        ids = [a["id"] for a in feed.tracker.snapshot()["actors"]]
+        self.assertIn(0x4000, ids)
+        self.assertNotIn(0x1006, ids)                  # dono antigo NÃO recebe
+
 
 class DpsTrackerTest(unittest.TestCase):
     def test_idle_reset_starts_new_encounter(self):
@@ -168,6 +250,43 @@ class DpsTrackerTest(unittest.TestCase):
         self.assertEqual(snap["duration"], 2.0)
         self.assertEqual(snap["actors"][0]["dps"], 1000.0)
         self.assertEqual(snap["actors"][0]["pct"], 100.0)
+
+    def test_pet_owner_resolve_survives_reset(self):
+        # mapa pet->dono é persistente: o dano do pet não pode virar linha-fantasma
+        # depois de uma nova luta.
+        t = DpsTracker(idle_reset_s=10.0)
+        t.set_pet_owner(0x4000, 0x1006)
+        self.assertEqual(t.resolve(0x4000), 0x1006)
+        self.assertEqual(t.resolve(0x1006), 0x1006)   # não-pet: ele mesmo
+        t.record_damage(0x1006, 100, ts_ms=0)
+        t.record_damage(0x1006, 50, ts_ms=20000)      # +20s idle -> nova luta
+        self.assertEqual(t.resolve(0x4000), 0x1006)   # mapeamento PERSISTE
+
+    def test_resolve_pet_inside_record_damage(self):
+        # resolve_pet=True resolve pet->dono atomicamente dentro do lock.
+        t = DpsTracker()
+        t.set_pet_owner(0x4000, 0x1006)
+        t.record_damage(0x4000, 500, ts_ms=0, resolve_pet=True)
+        a = t.snapshot()["actors"][0]
+        self.assertEqual(a["id"], 0x1006)             # creditado ao dono
+        self.assertEqual(a["damage"], 500)
+
+    def test_clear_pet_owner(self):
+        t = DpsTracker()
+        t.set_pet_owner(0x4000, 0x1006)
+        self.assertEqual(t.resolve(0x4000), 0x1006)
+        t.clear_pet_owner(0x4000)
+        self.assertEqual(t.resolve(0x4000), 0x4000)   # volta a ser ele mesmo
+
+    def test_dot_damage_not_counted_as_hit(self):
+        # count_hit=False: DoT soma no dano mas não dilui crit%/DH%.
+        t = DpsTracker()
+        t.record_damage(0xA, 1000, is_crit=True, ts_ms=0)        # 1 hit, crit
+        t.record_damage(0xA, 500, ts_ms=1000, count_hit=False)  # DoT: só dano
+        a = t.snapshot()["actors"][0]
+        self.assertEqual(a["damage"], 1500)
+        self.assertEqual(a["hits"], 1)
+        self.assertEqual(a["crit"], 100.0)            # 1/1 — DoT não entrou no ratio
 
 
 if __name__ == "__main__":
