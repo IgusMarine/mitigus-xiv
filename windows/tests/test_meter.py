@@ -127,6 +127,16 @@ class MeterFeedTest(unittest.TestCase):
         self.assertFalse(byid[0xEE]["is_self"])
 
 
+    def test_top_action_is_highest_damage(self):
+        from mitigus.meter.names import action_name
+        feed = MeterFeed()
+        feed.feed_record(rec(self.init, src=1, ts=0))
+        feed.feed_record(rec(make_ae_wire(self.gen, 16137, [(0, 0x03, 0, 1000)]), src=0xAA, ts=1000))
+        feed.feed_record(rec(make_ae_wire(self.gen, 36937, [(0, 0x03, 0, 9000)]), src=0xAA, ts=1100))
+        a = feed.tracker.snapshot()["actors"][0]
+        self.assertEqual(a["top_action"], action_name(36937))  # robusto c/ ou sem actions.json
+
+
 class DpsTrackerTest(unittest.TestCase):
     def test_idle_reset_starts_new_encounter(self):
         t = DpsTracker(idle_reset_s=10.0)

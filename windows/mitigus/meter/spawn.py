@@ -18,15 +18,7 @@ NAME_LEN = 32
 LEVEL_OFFSET = 166
 CLASSJOB_OFFSET = 167
 
-# classJob -> abreviação de JOB (igual às chaves de cor em meter.html).
-# Classes-base mapeiam pro job correspondente (cor certa em chars de nível baixo).
-CLASSJOB = {
-    1: "PLD", 2: "MNK", 3: "WAR", 4: "DRG", 5: "BRD", 6: "WHM", 7: "BLM",
-    19: "PLD", 20: "MNK", 21: "WAR", 22: "DRG", 23: "BRD", 24: "WHM", 25: "BLM",
-    26: "SMN", 27: "SMN", 28: "SCH", 29: "NIN", 30: "NIN", 31: "MCH", 32: "DRK",
-    33: "AST", 34: "SAM", 35: "RDM", 36: "BLU", 37: "GNB", 38: "DNC", 39: "RPR",
-    40: "SGE", 41: "VPR", 42: "PCT",
-}
+from .names import job_abbr  # classJob -> abreviação (fonte: ClassJob.csv oficial)
 
 
 def parse_player_spawn(md: bytes):
@@ -41,4 +33,4 @@ def parse_player_spawn(md: bytes):
         name = raw.decode("utf-8", "replace") or None
     cj = md[CLASSJOB_OFFSET] if len(md) > CLASSJOB_OFFSET else 0
     level = md[LEVEL_OFFSET] if len(md) > LEVEL_OFFSET else 0
-    return name, CLASSJOB.get(cj), cj, level
+    return name, job_abbr(cj), cj, level

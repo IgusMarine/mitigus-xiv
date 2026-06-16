@@ -66,6 +66,30 @@ class CombatParseTest(unittest.TestCase):
         ae = parse_action_effect(md, 1)
         self.assertEqual(ae.total_damage, 1500)
 
+    def test_damage_over_65535(self):
+        # regra canônica (Sapphire extendedValueHighestByte + cactbot 0x4000):
+        # exemplo 423F com byte alto 0F e flag 0x40 -> 0x0F423F = 999999
+        md = bytearray(140)
+        md[24:28] = (0x1234).to_bytes(4, "little")
+        md[49] = 1
+        off = EFFECTS_AT
+        md[off] = 0x03            # type = damage
+        md[off + 4] = 0x0F        # extendedValueHighestByte
+        md[off + 5] = 0x40        # flag 0x4000 (dano grande)
+        md[off + 6:off + 8] = (0x423F).to_bytes(2, "little")
+        ae = parse_action_effect(bytes(md), 1)
+        self.assertEqual(ae.total_damage, 0x0F423F)  # 999999
+
+    def test_no_overflow_when_flag_absent(self):
+        md = bytearray(140)
+        md[49] = 1
+        off = EFFECTS_AT
+        md[off] = 0x03
+        md[off + 4] = 0x0F        # byte alto presente, MAS sem a flag
+        md[off + 6:off + 8] = (5000).to_bytes(2, "little")
+        ae = parse_action_effect(bytes(md), 1)
+        self.assertEqual(ae.total_damage, 5000)      # ignora o byte alto
+
     def test_truncated_returns_none(self):
         self.assertIsNone(parse_action_effect(b"\x00" * 10, 1))
 

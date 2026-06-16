@@ -10,18 +10,23 @@ bytes do pacote desofuscado:
     +40  source_sequence  (u16)
     +49  effect_count     (u8)    = nº de alvos afetados
     +58  array de EffectEntry: [effect_count alvos][8 slots], 8 bytes cada
-         entry:  type@0  severity@1  kind@2  _@3  _@4  flags@5  value(u16)@6
+         entry (Sapphire Common.h struct EffectEntry, = FFXIVClientStructs):
+           type@0  severity@1  param1@2  param2@3  extValueHighByte@4
+           flags@5  value(u16)@6
          (ex. real: GCD -> type=0x03, value@6 = dano)
 
-Confirmação (luta.jsonl): para GCDs de dano (type=0x03), o byte @1 variou em
-0x00/0x20/0x40/0x60 — exatamente crit(0x20)/direct-hit(0x40)/ambos(0x60); o @2
-ficou constante (0x71). O array começa em +58 porque o Unscrambler ofusca o
-campo value (u16) exatamente em +64, +72, ... (= entry_start+6).
+Offsets/layout ANCORADOS em fonte canônica (Sapphire ServerZoneDef.h/Common.h +
+aers/FFXIVClientStructs), confirmados byte-a-byte contra a captura real
+(luta.jsonl): severity@1 variou 0x00/0x20/0x40/0x60 = crit(0x20)/DH(0x40)/ambos.
 
-Tipos: 0x03 dano (95%+ do total), 0x05/0x06 dano bloqueado/aparado; 0x04 cura;
-0x0e/0x0f = APLICAR status (o "value" é o ID do status, NÃO é dano -> fora).
-TODO: 0x19 apareceu 2x (ação 0x90xx, ~8607) — possível dano de pet/LB, a
-confirmar; dano >65535 precisa do tratamento de overflow (não ocorreu aqui).
+Tipos (enum ActionEffectType — Sapphire Common.h, confirmado p/ cactbot):
+0x03 Damage, 0x05 BlockedDamage, 0x06 ParriedDamage = DANO; 0x04 Heal;
+0x0F ApplyStatusEffectTarget / 0x10 ApplyStatusEffectSource (value = ID do
+status, NÃO é dano); 0x1B StartActionCombo (combo, não é dano). Só 0x03/0x05/
+0x06 entram no DPS. (0x19/0x1B NÃO são dano — eram chute meu; fonte desmente.)
+
+Dano > 65535 (Sapphire extendedValueHighestByte + cactbot flag 0x4000): se
+flags(byte@5) & 0x40, o dano real = (byte@4 << 16) | value(u16). Implementado.
 """
 from __future__ import annotations
 
@@ -124,11 +129,15 @@ def parse_action_effect(md: bytes, max_targets: int) -> Optional[ActionEffectRes
             etype = md[off]
             if etype == 0:
                 continue  # slot vazio
+            value = _u16(md, off + 6)
+            flags = md[off + 5]
+            if flags & 0x40:                # dano > 65535 (flag 0x4000)
+                value |= md[off + 4] << 16  # byte alto = extendedValueHighestByte
             res.effects.append(Effect(
                 target_index=t,
                 type=etype,
                 severity=md[off + 1],   # 0x20=crit, 0x40=direct-hit, 0x60=ambos
-                flags=md[off + 5],
-                value=_u16(md, off + 6),
+                flags=flags,
+                value=value,
             ))
     return res

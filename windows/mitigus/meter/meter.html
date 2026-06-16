@@ -69,6 +69,7 @@
   .who .nm{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .who .sub{font-size:11px;color:var(--faint);display:flex;gap:8px;margin-top:1px}
   .who .sub .crit{color:var(--warn)} .who .sub .dh{color:var(--purple)}
+  .who .top{font-size:10.5px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
   .nmrow{display:flex;align-items:center;gap:7px;min-width:0}
   .job{font-size:9.5px;font-weight:700;letter-spacing:.04em;padding:1px 6px;border-radius:5px;
     background:oklch(0.26 0.02 245);border:1px solid var(--line-soft);flex:0 0 auto}
@@ -137,7 +138,8 @@
     el.innerHTML =
       '<div class="fill"></div><div class="rank"></div>'
       + '<div class="who"><span class="nmrow"><span class="nm"></span><span class="job"></span></span>'
-      + '<span class="sub"><span class="lv"></span><span class="crit"></span><span class="dh"></span></span></div>'
+      + '<span class="sub"><span class="lv"></span><span class="crit"></span><span class="dh"></span></span>'
+      + '<span class="top"></span></div>'
       + '<div class="num"><div class="dps"></div><div class="pct"></div></div>';
     return el;
   }
@@ -174,6 +176,9 @@
       const lv = el.querySelector(".lv");
       if(a.level){ lv.textContent = "Lv"+a.level; lv.style.display=""; }
       else { lv.style.display = "none"; }
+      const tp = el.querySelector(".top");
+      if(a.top_action){ tp.textContent = "↳ "+a.top_action; tp.style.display=""; }
+      else { tp.style.display = "none"; }
       el.querySelector(".crit").textContent = "crit "+a.crit.toFixed(0)+"%";
       el.querySelector(".dh").textContent = "DH "+a.dh.toFixed(0)+"%";
       el.querySelector(".dps").textContent = fmt(a.dps);

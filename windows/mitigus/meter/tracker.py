@@ -13,9 +13,11 @@ from __future__ import annotations
 import threading
 import time
 
+from .names import action_name
+
 
 class _Actor:
-    __slots__ = ("id", "damage", "hits", "crit", "dh", "name", "job", "level")
+    __slots__ = ("id", "damage", "hits", "crit", "dh", "name", "job", "level", "actions")
 
     def __init__(self, actor_id):
         self.id = actor_id
@@ -26,6 +28,7 @@ class _Actor:
         self.name = None
         self.job = None
         self.level = None
+        self.actions = {}     # action_id -> dano acumulado (pra "top ability")
 
 
 class DpsTracker:
@@ -39,7 +42,8 @@ class DpsTracker:
         self.encounters = 0
 
     # ---- entrada de dados (chamado pela ponte ao vivo) -------------------
-    def record_damage(self, actor_id, value, is_crit=False, is_direct=False, ts_ms=None):
+    def record_damage(self, actor_id, value, is_crit=False, is_direct=False,
+                      ts_ms=None, action_id=0):
         if value <= 0:
             return
         ts = ts_ms if ts_ms is not None else int(time.time() * 1000)
@@ -57,6 +61,8 @@ class DpsTracker:
             a.hits += 1
             a.crit += int(is_crit)
             a.dh += int(is_direct)
+            if action_id:
+                a.actions[action_id] = a.actions.get(action_id, 0) + value
 
     def set_actor_info(self, actor_id, name=None, job=None, level=None):
         with self._lock:
@@ -96,6 +102,7 @@ class DpsTracker:
                 if a.damage == 0 and a.hits == 0:
                     continue
                 dps = a.damage / dur if dur > 0 else 0.0
+                top_id = max(a.actions, key=a.actions.get) if a.actions else 0
                 rows.append({
                     "id": a.id,
                     "name": a.name or (f"Você" if a.id == self._self_id else f"{a.id:08X}"),
@@ -108,6 +115,7 @@ class DpsTracker:
                     "hits": a.hits,
                     "crit": round(100 * a.crit / a.hits, 1) if a.hits else 0.0,
                     "dh": round(100 * a.dh / a.hits, 1) if a.hits else 0.0,
+                    "top_action": action_name(top_id) if top_id else None,
                 })
             return {
                 "active": self._start_ms is not None,

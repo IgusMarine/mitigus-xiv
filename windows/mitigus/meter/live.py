@@ -84,4 +84,5 @@ class MeterFeed:
         for e in ae.effects:
             if e.is_damage:
                 self.tracker.record_damage(
-                    src, e.value, e.is_crit, e.is_direct, ts_ms=ts)
+                    src, e.value, e.is_crit, e.is_direct, ts_ms=ts,
+                    action_id=ae.action_id)
