@@ -86,9 +86,21 @@ def _f32(b, o):
     return struct.unpack_from("<f", b, o)[0]
 
 
+def get_target_id(md: bytes, t: int, max_targets: int, segment_target_actor: int) -> int:
+    if max_targets == 1:
+        return segment_target_actor
+    effects_end = EFFECTS_AT + max_targets * SLOTS_PER_TARGET * ENTRY_SIZE
+    target_ids_start = ((effects_end + 7) // 8) * 8
+    off = target_ids_start + t * 8
+    if off + 4 <= len(md):
+        return int.from_bytes(md[off:off+4], "little")
+    return 0
+
+
 @dataclass
 class Effect:
     target_index: int
+    target_id: int
     type: int
     severity: int
     flags: int
@@ -124,7 +136,7 @@ class ActionEffectResult:
         return sum(e.value for e in self.effects if e.is_damage)
 
 
-def parse_action_effect(md: bytes, max_targets: int) -> Optional[ActionEffectResult]:
+def parse_action_effect(md: bytes, max_targets: int, segment_target_actor: int = 0) -> Optional[ActionEffectResult]:
     """
     Interpreta um ActionEffect DESOFUSCADO (buffer a partir do header IPC).
     `max_targets` é o teto do variante (1/8/16/24/32). Retorna None se truncado.
@@ -139,6 +151,7 @@ def parse_action_effect(md: bytes, max_targets: int) -> Optional[ActionEffectRes
 
     res = ActionEffectResult(action_id, seq, anim, count)
     for t in range(n_targets):
+        target_id = get_target_id(md, t, max_targets, segment_target_actor)
         base = EFFECTS_AT + t * SLOTS_PER_TARGET * ENTRY_SIZE
         for s in range(SLOTS_PER_TARGET):
             off = base + s * ENTRY_SIZE
@@ -153,6 +166,7 @@ def parse_action_effect(md: bytes, max_targets: int) -> Optional[ActionEffectRes
                 value |= md[off + 4] << 16  # byte alto = extendedValueHighestByte
             res.effects.append(Effect(
                 target_index=t,
+                target_id=target_id,
                 type=etype,
                 severity=md[off + 1],   # 0x20=crit, 0x40=direct-hit, 0x60=ambos
                 flags=flags,

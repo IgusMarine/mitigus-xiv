@@ -342,7 +342,11 @@ def _run_full(ps5_ip, pc_ip, port, mitigate, exe, extra_delay, opcodes_json, pan
     if panel:
         from mitigus.panel.server import PanelServer
 
-        panel_server = PanelServer(hub, host=panel_host, port=panel_port, on_update_opcodes=refresh_opcodes)
+        tracker = getattr(capture_sink, "tracker", None)
+        panel_server = PanelServer(
+            hub, host=panel_host, port=panel_port,
+            on_update_opcodes=refresh_opcodes, tracker=tracker
+        )
 
     ct = ConnTrack()
     cfg = ProxyConfig(ps5_ip=ps5_ip, pc_ip=pc_ip, proxy_port=port)

@@ -33,6 +33,8 @@ class MeterFeed:
         self._init_op = self.deob.constants.unknown_obfuscation_init_opcode
         self._ps_op = ops.get("PlayerSpawn")
         self._ac_op = ops.get("ActorControl")          # tick de DoT (cat 0x605)
+        self._status_op = ops.get("StatusEffectList")
+        self._status3_op = ops.get("StatusEffectList3")
         self._npc_ops = {op for op in (ops.get("NpcSpawn"), ops.get("NpcSpawn2"))
                          if op is not None}            # pet -> dono
         self._variants = {}
@@ -49,21 +51,23 @@ class MeterFeed:
         for mh, md in messages:
             if mh.type_int != _IPC or len(md) < IPC_HEADER_SIZE:
                 continue
-            self._handle(ts, int(mh.source_actor), bytes(md))
+            self._handle(ts, int(mh.source_actor), int(mh.target_actor), bytes(md))
 
     __call__ = on_segment
 
     # reprocesso offline de uma captura .jsonl ----------------------------
     def feed_record(self, rec: dict) -> None:
-        if rec.get("dir", "s2c") != "s2c":
+        if rec.get("dir") != "s2c":
+            return
+        if "data" not in rec:
             return
         md = bytes.fromhex(rec["data"])
         if len(md) < IPC_HEADER_SIZE:
             return
-        self._handle(int(rec.get("ts", 0)), int(rec.get("src", 0)), md)
+        self._handle(int(rec.get("ts") or 0), int(rec.get("src") or 0), int(rec.get("tgt") or 0), md)
 
     # núcleo --------------------------------------------------------------
-    def _handle(self, ts, src, md) -> None:
+    def _handle(self, ts, src, tgt, md) -> None:
         op = int.from_bytes(md[2:4], "little")
         if op == self._init_op:
             self.deob.feed_initializer(md)
@@ -79,6 +83,32 @@ class MeterFeed:
                     caster, amount, ts_ms=ts, count_hit=False, resolve_pet=True)
             return
         if not self.deob.is_active:
+            return
+        if op == self._status_op or op == self._status3_op:
+            op_offset = 36 if op == self._status_op else 16
+            clean = self.deob.unscramble_copy(md)
+            status_list = []
+            for i in range(30):
+                base = op_offset + i * 12
+                if base + 12 > len(clean):
+                    break
+                status_id = int.from_bytes(clean[base:base+2], "little")
+                if status_id == 0:
+                    continue
+                stacks = clean[base+2]
+                import struct
+                try:
+                    duration = struct.unpack_from("<f", clean, base+4)[0]
+                except Exception:
+                    duration = 0.0
+                caster_id = int.from_bytes(clean[base+8:base+12], "little")
+                status_list.append({
+                    "status_id": status_id,
+                    "stacks": stacks,
+                    "duration": duration,
+                    "caster_id": caster_id
+                })
+            self.tracker.update_actor_status(src, status_list, ts)
             return
         if op in self._npc_ops:                     # pet/invocação -> dono
             owner = parse_npc_spawn(self.deob.unscramble_copy(md))
@@ -96,7 +126,7 @@ class MeterFeed:
         if op not in self._variants:
             return
         clean = self.deob.unscramble_copy(md)
-        ae = parse_action_effect(clean, self._variants[op])
+        ae = parse_action_effect(clean, self._variants[op], segment_target_actor=tgt)
         if ae is None:
             return
         # ações suas têm sequence != 0 (as dos outros chegam como server-originated);
@@ -116,4 +146,4 @@ class MeterFeed:
             if e.is_damage:
                 self.tracker.record_damage(
                     src, e.value, e.is_crit, e.is_direct, ts_ms=ts,
-                    action_id=ae.action_id, resolve_pet=True)
+                    action_id=ae.action_id, resolve_pet=True, target_id=e.target_id)

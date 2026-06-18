@@ -128,7 +128,10 @@ class OpcodeDefinition:
 
     def matches_server(self, ip: str, port: int) -> bool:
         in_ip = not self.Server_IpRange
-        addr = ipaddress.IPv4Address(ip)
+        try:
+            addr = ipaddress.IPv4Address(ip)
+        except ipaddress.AddressValueError:
+            return False
         for r in self.Server_IpRange:
             if isinstance(r, ipaddress.IPv4Network):
                 if addr in r:

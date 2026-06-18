@@ -63,7 +63,12 @@ def candidate_paths(explicit: Optional[str] = None, base_dir: Optional[str] = No
 
 def find_ffxiv_dx11(explicit: Optional[str] = None, base_dir: Optional[str] = None) -> Optional[str]:
     """Devolve o caminho do ffxiv_dx11.exe, ou None se não achar."""
+    import sys
+    our_exe = os.path.abspath(sys.executable) if getattr(sys, "frozen", False) else None
     for c in candidate_paths(explicit, base_dir):
         if c and os.path.isfile(c):
+            # Ignora a si mesmo caso o executável principal esteja rodando como ffxiv_dx11.exe
+            if our_exe and os.path.abspath(c) == our_exe:
+                continue
             return c
     return None

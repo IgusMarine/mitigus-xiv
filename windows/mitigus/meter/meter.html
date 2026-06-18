@@ -48,6 +48,14 @@
     border-radius:8px;font-family:inherit;font-size:12px;font-weight:600;padding:6px 12px;cursor:pointer}
   .btn:hover{color:var(--cyan);border-color:var(--cyan-dim)}
 
+  .tabs{display:flex;gap:6px;padding:2px 16px 10px}
+  .tab-btn{flex:1;background:var(--surface);color:var(--muted);border:1px solid var(--line-soft);
+    border-radius:8px;font-family:inherit;font-size:11.5px;font-weight:600;padding:6px 4px;cursor:pointer;
+    text-align:center;transition:all .15s ease}
+  .tab-btn:hover{color:var(--txt);border-color:var(--line)}
+  .tab-btn.active{background:oklch(0.22 0.05 210);color:var(--cyan);border-color:var(--cyan-dim);
+    box-shadow:0 0 8px var(--glow)}
+
   .total{display:flex;align-items:baseline;gap:14px;padding:2px 18px 12px;flex-wrap:wrap}
   .total .big{font-size:52px;font-weight:700;line-height:.9;letter-spacing:-.02em;color:var(--cyan);
     text-shadow:0 0 26px var(--glow)}
@@ -94,8 +102,15 @@
     <button class="btn" id="reset">Resetar</button>
   </header>
 
+  <div class="tabs">
+    <button class="tab-btn active" data-metric="dps">DPS Bruto</button>
+    <button class="tab-btn" data-metric="rdps">rDPS</button>
+    <button class="tab-btn" data-metric="adps">aDPS</button>
+    <button class="tab-btn" data-metric="ndps">nDPS</button>
+  </div>
+
   <div class="total">
-    <div class="big"><span id="tdps">0</span><small>DPS</small></div>
+    <div class="big"><span id="tdps">0</span><small id="totalLabel">DPS</small></div>
     <div class="meta">
       <span><b id="dur">0:00</b> <i>duração</i></span>
       <i>·</i>
@@ -124,6 +139,16 @@
 
   const list = document.getElementById("list");
   const rows = new Map();   // id -> elementos (reuso p/ animar)
+  let currentMetric = "dps";
+
+  document.querySelectorAll(".tab-btn").forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      currentMetric = btn.dataset.metric;
+      tick();
+    };
+  });
 
   function emptyState(){
     list.innerHTML =
@@ -151,22 +176,31 @@
     const on = d.active && d.actors.length;
     live.classList.toggle("on", !!on);
     document.getElementById("liveTxt").textContent = on ? "AO VIVO" : "parado";
-    document.getElementById("tdps").textContent = fmt(d.total_dps);
+    
+    const labelMap = { dps: "DPS", rdps: "rDPS", adps: "aDPS", ndps: "nDPS" };
+    document.getElementById("totalLabel").textContent = labelMap[currentMetric];
+    
+    const totalDps = currentMetric === "dps" ? d.total_dps : d.actors.reduce((acc, a) => acc + (a[currentMetric] || 0), 0);
+    document.getElementById("tdps").textContent = fmt(totalDps);
     document.getElementById("dur").textContent = mmss(d.duration);
     document.getElementById("tdmg").textContent = fmt(d.total_damage);
     document.getElementById("enc").textContent = d.encounters || 0;
 
     if(!d.actors.length){ emptyState(); return; }
     if(list.querySelector(".empty")) list.innerHTML = "";
-    const top = d.actors[0].damage || 1;
+    
+    const sortedActors = [...d.actors].sort((x, y) => (y[currentMetric] || 0) - (x[currentMetric] || 0));
+    const top = sortedActors.length ? (sortedActors[0][currentMetric] || 1) : 1;
     const seen = new Set();
-    d.actors.forEach((a,i)=>{
+    
+    sortedActors.forEach((a,i)=>{
       seen.add(a.id);
       let el = rows.get(a.id);
       if(!el){ el = rowEl(); rows.set(a.id, el); }
       list.appendChild(el);  // reordena por dano
       const c = color(a,i);
-      el.querySelector(".fill").style.width = (100*a.damage/top).toFixed(1)+"%";
+      const val = a[currentMetric] || 0;
+      el.querySelector(".fill").style.width = (100*val/top).toFixed(1)+"%";
       el.querySelector(".fill").style.background = c;
       el.querySelector(".rank").textContent = i+1;
       const nm = el.querySelector(".nm"); nm.textContent = a.name; nm.style.color = a.is_self ? "var(--cyan)" : "var(--txt)";
@@ -181,9 +215,10 @@
       else { tp.style.display = "none"; }
       el.querySelector(".crit").textContent = "crit "+a.crit.toFixed(0)+"%";
       el.querySelector(".dh").textContent = "DH "+a.dh.toFixed(0)+"%";
-      el.querySelector(".dps").textContent = fmt(a.dps);
+      el.querySelector(".dps").textContent = fmt(val);
       el.querySelector(".dps").style.color = c;
-      el.querySelector(".pct").textContent = a.pct.toFixed(1)+"%";
+      const pctVal = totalDps ? (100 * val / totalDps) : 0.0;
+      el.querySelector(".pct").textContent = pctVal.toFixed(1)+"%";
     });
     for(const [id,el] of rows){ if(!seen.has(id)){ el.remove(); rows.delete(id); } }
   }

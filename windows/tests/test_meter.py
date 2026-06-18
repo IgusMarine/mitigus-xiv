@@ -74,6 +74,23 @@ def make_npc_spawn_wire(deob, owner, which="NpcSpawn"):
     return bytes(md)
 
 
+def make_status_wire(deob, op_name, entries, src=0xAA):
+    """entries: list of dicts: {'status_id': ..., 'stacks': ..., 'duration': ..., 'caster_id': ...}"""
+    md = bytearray(400)
+    md[2:4] = deob.constants.obfuscated_opcodes[op_name].to_bytes(2, "little")
+    op_offset = 36 if op_name == "StatusEffectList" else 16
+    for i, s in enumerate(entries):
+        base = op_offset + i * 12
+        if base + 12 > len(md):
+            break
+        md[base:base+2] = s["status_id"].to_bytes(2, "little")
+        md[base+2] = s["stacks"]
+        struct.pack_into("<f", md, base+4, float(s["duration"]))
+        md[base+8:base+12] = s["caster_id"].to_bytes(4, "little")
+    deob.unscrambler.scramble(md, *deob.keygen.keys, deob.keygen.opcode_key_table)
+    return bytes(md)
+
+
 def rec(md, src, ts, direction="s2c"):
     return {"dir": direction, "ts": ts, "src": src,
             "op": int.from_bytes(md[2:4], "little"), "data": bytes(md).hex()}
@@ -217,6 +234,116 @@ class MeterFeedTest(unittest.TestCase):
         ids = [a["id"] for a in feed.tracker.snapshot()["actors"]]
         self.assertIn(0x4000, ids)
         self.assertNotIn(0x1006, ids)                  # dono antigo NÃO recebe
+
+    def test_rdps_divination_aoe_buff(self):
+        feed = MeterFeed()
+        # Feed the initializer first so deobfuscation is active
+        feed.feed_record(rec(self.init, src=1, ts=0))
+        # Start combat at ts=0 with a dummy 1-damage hit
+        dummy_ae = make_ae_wire(self.gen, 0x100, [(0, 0x03, 0, 1)], seq=1)
+        feed.feed_record(rec(dummy_ae, src=0x2222, ts=0))
+
+        # Player A (0x1111) applies Divination (ID 1878, AoE mult, 6%) on Player B (0x2222)
+        status_entries = [{"status_id": 1878, "stacks": 0, "duration": 20.0, "caster_id": 0x1111}]
+        status_wire = make_status_wire(self.gen, "StatusEffectList", status_entries, src=0x2222)
+        feed.feed_record(rec(status_wire, src=0x2222, ts=1000))
+        
+        # Player B (0x2222) does 1060 damage (non-crit, non-direct)
+        ae_wire = make_ae_wire(self.gen, 0x100, [(0, 0x03, 0, 1060)], seq=1)
+        feed.feed_record(rec(ae_wire, src=0x2222, ts=1500))
+        
+        snap = feed.tracker.snapshot()
+        self.assertEqual(snap["total_damage"], 1061)
+        
+        actors = {a["id"]: a for a in snap["actors"]}
+        actor_b = actors[0x2222]
+        actor_a = actors[0x1111]
+        
+        self.assertEqual(actor_b["damage"], 1061)
+        self.assertEqual(actor_a["damage"], 0)
+        
+        # B's raw neutral = 1000 (from 1060/1.06) + 1 (from dummy) = 1001
+        self.assertAlmostEqual(actor_b["ndps"] * 1.5, 1001.0, delta=2.0)
+        # B's raw adps = 1060 (since divination is AoE) + 1 = 1061
+        self.assertAlmostEqual(actor_b["adps"] * 1.5, 1061.0, delta=2.0)
+        # B's raw rdps = 1001
+        self.assertAlmostEqual(actor_b["rdps"] * 1.5, 1001.0, delta=2.0)
+        # A's raw rdps = 60
+        self.assertAlmostEqual(actor_a["rdps"] * 1.5, 60.0, delta=2.0)
+        
+        # Total rDPS sum check: 1001 + 60 = 1061 (equal to total damage)
+        total_rdps = sum(a["rdps"] for a in snap["actors"])
+        self.assertAlmostEqual(total_rdps * 1.5, 1061.0, delta=2.0)
+
+    def test_rdps_standard_finish_single_buff(self):
+        feed = MeterFeed()
+        # Feed the initializer first so deobfuscation is active
+        feed.feed_record(rec(self.init, src=1, ts=0))
+        # Start combat at ts=0 with a dummy 1-damage hit
+        dummy_ae = make_ae_wire(self.gen, 0x100, [(0, 0x03, 0, 1)], seq=1)
+        feed.feed_record(rec(dummy_ae, src=0x2222, ts=0))
+
+        # Player A (0x1111) applies Standard Finish (ID 2105, single-target mult, 5%) on Player B (0x2222)
+        status_entries = [{"status_id": 2105, "stacks": 0, "duration": 20.0, "caster_id": 0x1111}]
+        status_wire = make_status_wire(self.gen, "StatusEffectList", status_entries, src=0x2222)
+        feed.feed_record(rec(status_wire, src=0x2222, ts=1000))
+        
+        # Player B (0x2222) does 1050 damage (non-crit, non-direct)
+        ae_wire = make_ae_wire(self.gen, 0x100, [(0, 0x03, 0, 1050)], seq=1)
+        feed.feed_record(rec(ae_wire, src=0x2222, ts=1500))
+        
+        snap = feed.tracker.snapshot()
+        self.assertEqual(snap["total_damage"], 1051)
+        
+        actors = {a["id"]: a for a in snap["actors"]}
+        actor_b = actors[0x2222]
+        actor_a = actors[0x1111]
+        
+        # B's raw neutral = 1000 (from 1050/1.05) + 1 = 1001
+        self.assertAlmostEqual(actor_b["ndps"] * 1.5, 1001.0, delta=2.0)
+        # B's raw adps = 1000 (standard finish is single, so excluded) + 1 = 1001
+        self.assertAlmostEqual(actor_b["adps"] * 1.5, 1001.0, delta=2.0)
+        # B's raw rdps = 1001
+        self.assertAlmostEqual(actor_b["rdps"] * 1.5, 1001.0, delta=2.0)
+        # A's raw rdps = 50
+        self.assertAlmostEqual(actor_a["rdps"] * 1.5, 50.0, delta=2.0)
+
+    def test_rdps_battle_litany_crit_buff(self):
+        feed = MeterFeed()
+        # Feed the initializer first so deobfuscation is active
+        feed.feed_record(rec(self.init, src=1, ts=0))
+        # Start combat at ts=0 with a dummy 1-damage hit
+        dummy_ae = make_ae_wire(self.gen, 0x100, [(0, 0x03, 0, 1)], seq=1)
+        feed.feed_record(rec(dummy_ae, src=0x2222, ts=0))
+
+        # Player A (0x1111) applies Battle Litany (ID 786, AoE crit, 10%) on Player B (0x2222)
+        status_entries = [{"status_id": 786, "stacks": 0, "duration": 20.0, "caster_id": 0x1111}]
+        status_wire = make_status_wire(self.gen, "StatusEffectList", status_entries, src=0x2222)
+        feed.feed_record(rec(status_wire, src=0x2222, ts=1000))
+        
+        # Player B (0x2222) does 1500 damage (crit, non-direct)
+        ae_wire = make_ae_wire(self.gen, 0x100, [(0, 0x03, 0x20, 1500)], seq=1) # severity 0x20 = crit
+        feed.feed_record(rec(ae_wire, src=0x2222, ts=1500))
+        
+        snap = feed.tracker.snapshot()
+        self.assertEqual(snap["total_damage"], 1501)
+        
+        actors = {a["id"]: a for a in snap["actors"]}
+        actor_b = actors[0x2222]
+        actor_a = actors[0x1111]
+        
+        # Base damage = 1500 / 1.5 = 1000.
+        # Crit gain = 1500 - 1000 = 500.
+        # Share of Battle Litany = 10% / (15% natural + 10% buff) = 0.40.
+        # Gain of Battle Litany = 500 * 0.4 = 200.
+        # Neutral of B: 1500 - 200 = 1300 + 1 (dummy) = 1301.
+        self.assertAlmostEqual(actor_b["ndps"] * 1.5, 1301.0, delta=2.0)
+        # aDPS of B: keeps Battle Litany gain since it's AoE. 1500 + 1 = 1501.
+        self.assertAlmostEqual(actor_b["adps"] * 1.5, 1501.0, delta=2.0)
+        # rDPS of B: neutral = 1301.
+        self.assertAlmostEqual(actor_b["rdps"] * 1.5, 1301.0, delta=2.0)
+        # A's raw rdps = 200.
+        self.assertAlmostEqual(actor_a["rdps"] * 1.5, 200.0, delta=2.0)
 
 
 class DpsTrackerTest(unittest.TestCase):

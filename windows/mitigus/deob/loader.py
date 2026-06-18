@@ -28,11 +28,15 @@ _TABLE_FILES = {
 
 
 def load_raw_tables(game_version: str) -> dict[str, bytes]:
-    base = os.path.join(_DATA_DIR, game_version)
+    user_appdata = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
+    user_base = os.path.join(user_appdata, "Mitigus", "deob", "data", game_version)
+    builtin_base = os.path.join(_DATA_DIR, game_version)
+    base = user_base if os.path.isdir(user_base) else builtin_base
+
     if not os.path.isdir(base):
         raise FileNotFoundError(
             f"Sem dados .bin para {game_version} em {base}. "
-            f"Copie os .bin do repo perchbirdd/Unscrambler."
+            f"Crie a pasta {user_base} e copie os arquivos .bin para ela."
         )
     out: dict[str, bytes] = {}
     for key, fname in _TABLE_FILES.items():

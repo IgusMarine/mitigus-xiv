@@ -78,6 +78,38 @@ VERSIONS: dict[str, VersionConstants] = {
 LATEST = _V_2026_06_10.game_version
 
 
+def _load_dynamic_versions():
+    import json
+    import os
+    user_appdata = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
+    p = os.path.join(user_appdata, "Mitigus", "deob", "versions.json")
+    if os.path.exists(p):
+        try:
+            with open(p, "r", encoding="utf-8") as fp:
+                data = json.load(fp)
+            for item in data:
+                v = VersionConstants(
+                    game_version=item["game_version"],
+                    obfuscation_enabled_mode=item["obfuscation_enabled_mode"],
+                    table_radixes=tuple(item["table_radixes"]),
+                    table_max=tuple(item["table_max"]),
+                    init_zone_opcode=item["init_zone_opcode"],
+                    unknown_obfuscation_init_opcode=item["unknown_obfuscation_init_opcode"],
+                    obfuscated_opcodes=item["obfuscated_opcodes"],
+                    keygen_gen=item.get("keygen_gen", "74"),
+                    unscramble_gen=item.get("unscramble_gen", "73")
+                )
+                VERSIONS[v.game_version] = v
+                global LATEST
+                if v.game_version > LATEST:
+                    LATEST = v.game_version
+        except Exception:
+            pass
+
+
+_load_dynamic_versions()
+
+
 def for_game_version(game_version: str) -> VersionConstants:
     try:
         return VERSIONS[game_version]
