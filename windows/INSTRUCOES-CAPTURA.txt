@@ -1,0 +1,51 @@
+============================================================
+  ⚡ M I T I G U S   X I V  —  GUIA DE CAPTURA DE LOGS ⚡
+  (Para fins de testes, diagnóstico e análise)
+============================================================
+
+Este guia orienta como gravar o arquivo de log do tráfego 
+de rede do FFXIV para análise de dados e suporte.
+
+------------------------------------------------------------
+ 📦 ANTES DE COMEÇAR
+------------------------------------------------------------
+1) FECHE o Mitigus principal se estiver aberto.
+2) Garanta que a cópia do seu "ffxiv_dx11.exe" real do jogo 
+   esteja na pasta "vendor/ffxiv_dx11.exe".
+
+------------------------------------------------------------
+ 🚀 PASSO A PASSO
+------------------------------------------------------------
+1) Execute o arquivo:
+       ▶ Mitigus Captura.exe
+   
+   * Clique com o botão direito -> "Executar como Administrador".
+   * Se o Windows SmartScreen reclamar, clique em "Mais 
+     informações" -> "Executar assim mesmo".
+
+2) Aguarde a janela preta abrir e carregar. Quando a linha 
+   "proxy real" / "Ctrl+C encerra" aparecer, a captura já 
+   estará gravando em segundo plano.
+
+3) NO CONSOLE (PS5/PS4):
+   * Com o jogo aberto, faça o seu personagem TROCAR DE ZONA 
+     (teleporte para outra cidade ou entre em uma masmorra).
+   * >>> PASSO CRÍTICO: A decodificação só engata se o jogo 
+     carregar uma zona nova depois que a captura estiver aberta.
+   * Ataque um boneco de treino (Striking Dummy) por 30 a 60 
+     segundos usando sua rotação normal.
+
+4) Pare a captura fechando a janela preta no PC (ou apertando 
+   Ctrl+C no console).
+
+------------------------------------------------------------
+ 📂 ARQUIVO DE SAÍDA (O QUE ME MANDAR)
+------------------------------------------------------------
+Dentro da pasta do programa, será gravado um arquivo:
+      
+      capture-AAAAMMDD-HHMMSS.jsonl
+      (Exemplo: capture-20260618-112800.jsonl)
+
+Envie apenas esse arquivo .jsonl para análise. Nele estarão 
+as informações brutas das ações do combate registradas.
+============================================================

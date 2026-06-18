@@ -29,17 +29,19 @@ _FONT_NAME_RE = re.compile(r"[A-Za-z0-9._-]+\.woff2")
 
 
 class PanelServer:
-    def __init__(self, hub: ControlHub, host: str = "0.0.0.0", port: int = 8080, on_update_opcodes=None):
+    def __init__(self, hub: ControlHub, host: str = "0.0.0.0", port: int = 8080, on_update_opcodes=None, tracker=None):
         self.hub = hub
         self.host = host
         self.port = port
         self.on_update_opcodes = on_update_opcodes  # callable() -> dict, opcional
+        self.tracker = tracker                      # DpsTracker, opcional
         self._httpd = None
         self._thread = None
 
     def start(self) -> int:
         hub = self.hub
         on_update = self.on_update_opcodes
+        tracker = self.tracker
         with open(_INDEX_PATH, "rb") as fp:
             index_html = fp.read()
 
@@ -91,6 +93,11 @@ class PanelServer:
                     self._json(hub.status())
                 elif path == "/api/logs":
                     self._json({"lines": hub.logs()})
+                elif path == "/api/dps":
+                    if tracker is not None:
+                        self._json(tracker.snapshot())
+                    else:
+                        self._json({"error": "dps meter disabled"}, 404)
                 else:
                     self._json({"error": "not found"}, 404)
 
@@ -98,6 +105,12 @@ class PanelServer:
                 parsed = urllib.parse.urlparse(self.path)
                 if parsed.path == "/api/toggle":
                     self._json({"enabled": hub.toggle()})
+                elif parsed.path == "/api/reset":
+                    if tracker is not None:
+                        tracker.reset()
+                        self._json({"ok": True})
+                    else:
+                        self._json({"error": "dps meter disabled"}, 404)
                 elif parsed.path == "/api/enable":
                     qs = urllib.parse.parse_qs(parsed.query)
                     on = qs.get("on", ["1"])[0].lower() not in ("0", "false", "off")

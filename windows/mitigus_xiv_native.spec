@@ -1,21 +1,29 @@
 # -*- mode: python ; coding: utf-8 -*-
 # Versão DEFINITIVA: janela FRAMELESS (pywebview/WebView2) -> "Mitigus XIV (app).exe".
 # Sem a barra do Windows; barra própria (min/max/fechar) + bandeja. console=False.
+import glob
+import os
+
 from PyInstaller.utils.hooks import collect_all, collect_data_files, collect_submodules
 
 # pywebview: traz WebView2Loader.dll + assemblies .NET + os JS embutidos (lib/js).
 webview_datas, webview_binaries, webview_hiddenimports = collect_all("webview")
 
-datas = webview_datas + collect_data_files("pydivert") + [
+# tabelas de desofuscacao (.bin) por patch -> _internal/mitigus/deob/data/<ver>/
+deob_bins = [(p, os.path.dirname(p)) for p in
+             glob.glob("mitigus/deob/data/**/*.bin", recursive=True)]
+
+datas = webview_datas + collect_data_files("pydivert") + deob_bins + [
     ("mitigus/panel/index.html", "mitigus/panel"),
     ("mitigus/panel/fonts/chakra-petch-latin-400-normal.woff2", "mitigus/panel/fonts"),
     ("mitigus/panel/fonts/chakra-petch-latin-500-normal.woff2", "mitigus/panel/fonts"),
     ("mitigus/panel/fonts/chakra-petch-latin-600-normal.woff2", "mitigus/panel/fonts"),
     ("mitigus/panel/fonts/chakra-petch-latin-700-normal.woff2", "mitigus/panel/fonts"),
+    ("mitigus/meter/data/actions.json", "mitigus/meter/data"),
     ("mitigus.ico", "."),
 ]
 
-hiddenimports = webview_hiddenimports + collect_submodules("pydivert") + [
+hiddenimports = webview_hiddenimports + collect_submodules("pydivert") + collect_submodules("mitigus.deob") + [
     "webview.platforms.edgechromium",
     "webview.platforms.winforms",
     "clr",
@@ -37,6 +45,11 @@ hiddenimports = webview_hiddenimports + collect_submodules("pydivert") + [
     "mitigus.net.tcpinfo",
     "mitigus.net.datacenter",
     "mitigus.net.socks5",
+    "mitigus.meter.tracker",
+    "mitigus.meter.live",
+    "mitigus.meter.combat",
+    "mitigus.meter.names",
+    "mitigus.meter.spawn",
 ]
 
 a = Analysis(
@@ -69,7 +82,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name="Mitigus XIV (app)",
+    name="Mitigus XIV App",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -91,5 +104,5 @@ coll = COLLECT(
     strip=False,
     upx=False,
     upx_exclude=[],
-    name="Mitigus XIV (app)",
+    name="Mitigus XIV App",
 )

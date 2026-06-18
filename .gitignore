@@ -19,6 +19,17 @@ ffxiv_dx11.exe
 # === Logs / runtime ===
 *.log
 
+# === Dados do FFXIV gerados (conteúdo da Square Enix) — gerar local, não versionar ===
+windows/mitigus/meter/data/actions.json
+**/actions.json
+*.csv
+
+# === Capturas (contêm dados pessoais: nome/Content ID do personagem) ===
+# nenhum .jsonl deve ir pro repo (capturas reais têm dados do personagem;
+# fixtures de teste ficam em dirs temporários)
+*.jsonl
+**/*.jsonl
+
 # === Config local do Claude / sessão ===
 /.claude/
 

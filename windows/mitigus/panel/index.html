@@ -36,7 +36,7 @@
     --font-mono:ui-monospace,"Cascadia Mono","Consolas",monospace;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{margin:0;height:100%}
+  html,body{margin:0;height:100%;overflow:hidden}
   body{
     background:
       radial-gradient(120% 55% at 50% -8%, oklch(0.82 0.12 210 / .10), transparent 55%),
@@ -57,15 +57,15 @@
     filter:drop-shadow(0 0 7px var(--glow))}
   .tb-brand svg{width:20px;height:20px;stroke:currentColor;stroke-width:1.5;fill:none}
   .tb-title{font-weight:700;letter-spacing:.16em;font-size:13px;color:oklch(0.88 0.1 205)}
-  .tb-tabs{flex:1;display:flex;justify-content:center;gap:2px;height:100%}
+  .tb-tabs{flex:1;display:flex;justify-content:center;gap:4px;height:100%}
   .tb-tab{position:relative;border:0;background:transparent;cursor:pointer;height:100%;
-    font-family:inherit;font-weight:600;font-size:13.5px;letter-spacing:.02em;
-    color:var(--faint);padding:0 18px;transition:color .18s}
+    font-family:inherit;font-weight:600;font-size:12px;letter-spacing:.02em;
+    color:var(--faint);padding:0 10px;transition:color .18s}
   .tb-tab:hover{color:var(--muted)}
   .tb-tab.on{color:oklch(0.92 0.11 200)}
-  .tb-tab.on::after{content:"";position:absolute;left:14px;right:14px;bottom:0;height:2px;border-radius:2px;
+  .tb-tab.on::after{content:"";position:absolute;left:6px;right:6px;bottom:0;height:2px;border-radius:2px;
     background:var(--cyan);box-shadow:0 0 16px 1px var(--glow)}
-  .tb-tab .dot{position:absolute;top:11px;right:9px;width:6px;height:6px;border-radius:50%;
+  .tb-tab .dot{position:absolute;top:11px;right:5px;width:6px;height:6px;border-radius:50%;
     background:var(--warn);box-shadow:0 0 8px var(--warn);display:none}
   .tb-tab.warn .dot{display:block}
   .tb-lang{align-self:center;margin-right:6px;background:var(--surface);color:var(--muted);
@@ -285,6 +285,51 @@
   .logpath b{color:var(--cyan);font-weight:600}
   .note{font-size:11px;color:var(--faint);text-align:center;margin-top:16px;line-height:1.6}
   .note b{color:var(--warn)}
+
+  /* ── DPS METER (Isolado) ── */
+  #meter .tabs{display:flex;gap:6px;padding:2px 16px 10px}
+  #meter .tab-btn{flex:1;background:var(--surface);color:var(--muted);border:1px solid var(--line-soft);
+    border-radius:8px;font-family:inherit;font-size:11.5px;font-weight:600;padding:6px 4px;cursor:pointer;
+    text-align:center;transition:all .15s ease}
+  #meter .tab-btn:hover{color:var(--txt);border-color:var(--line)}
+  #meter .tab-btn.active{background:oklch(0.22 0.05 210);color:var(--cyan);border-color:var(--cyan-dim);
+    box-shadow:0 0 8px var(--glow)}
+
+  #meter .total{display:flex;align-items:baseline;gap:14px;padding:2px 18px 12px;flex-wrap:wrap}
+  #meter .total .big{font-size:52px;font-weight:700;line-height:.9;letter-spacing:-.02em;color:var(--cyan);
+    text-shadow:0 0 26px var(--glow)}
+  #meter .total .big small{font-size:18px;font-weight:500;color:var(--cyan-dim);text-shadow:none;margin-left:4px}
+  #meter .total .meta{font-size:12.5px;color:var(--muted);display:flex;gap:8px;align-items:center}
+  #meter .total .meta b{color:var(--txt);font-weight:600}
+  #meter .total .meta i{color:var(--faint);font-style:normal}
+
+  #meter main{flex:1;overflow-y:auto;padding:2px 12px 16px;display:flex;flex-direction:column;gap:7px}
+  #meter main::-webkit-scrollbar{width:9px} #meter main::-webkit-scrollbar-thumb{background:oklch(0.3 0.02 245);border-radius:9px;border:2px solid var(--bg)}
+
+  #meter .row{position:relative;border:1px solid var(--line-soft);border-radius:11px;overflow:hidden;
+    background:var(--card);padding:9px 13px;display:flex;align-items:center;gap:11px;min-height:48px}
+  #meter .row .fill{position:absolute;inset:0;width:0;border-radius:inherit;opacity:.20;
+    transition:width .45s cubic-bezier(.22,.61,.36,1);z-index:0}
+  #meter .row>*{position:relative;z-index:1}
+  #meter .rank{font-size:12px;font-weight:700;color:var(--faint);width:18px;text-align:center;flex:0 0 auto}
+  #meter .who{display:flex;flex-direction:column;min-width:0;flex:1}
+  #meter .who .nm{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #meter .who .sub{font-size:11px;color:var(--faint);display:flex;gap:8px;margin-top:1px}
+  #meter .who .sub .crit{color:var(--warn)} #meter .who .sub .dh{color:var(--purple)}
+  #meter .who .top{font-size:10.5px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+  #meter .nmrow{display:flex;align-items:center;gap:7px;min-width:0}
+  #meter .job-icon{width:16px;height:16px;object-fit:contain;flex:0 0 auto;opacity:0.95;
+    filter:drop-shadow(0 1px 2px rgba(0,0,0,0.3));display:none}
+  #meter .job{font-size:9.5px;font-weight:700;letter-spacing:.04em;padding:1px 6px;border-radius:5px;
+    background:oklch(0.26 0.02 245);border:1px solid var(--line-soft);flex:0 0 auto}
+  #meter .num{text-align:right;flex:0 0 auto}
+  #meter .num .dps{font-size:19px;font-weight:700;line-height:1}
+  #meter .num .pct{font-size:11.5px;color:var(--muted);margin-top:2px}
+
+  #meter .empty{margin:auto;text-align:center;color:var(--muted);padding:40px 16px;width:100%}
+  #meter .empty .e-spark{width:34px;height:34px;color:var(--cyan-dim);margin:0 auto 12px;opacity:.7}
+  #meter .empty h2{font-size:15px;font-weight:600;color:var(--txt);margin-bottom:5px}
+  #meter .empty p{font-size:12.5px;line-height:1.55;max-width:320px;margin:0 auto}
 </style>
 </head>
 <body>
@@ -297,6 +342,7 @@
     </div>
     <div class="tb-tabs">
       <button class="tb-tab on" data-s="painel" data-i18n="nav.panel">Painel</button>
+      <button class="tb-tab" data-s="meter" id="tabMeter" style="display:none" data-i18n="nav.meter">DPS</button>
       <button class="tb-tab" data-s="config" id="tabConfig"><span data-i18n="nav.config">Configuração</span><span class="dot"></span></button>
     </div>
     <select class="tb-lang" id="langSel" title="Idioma / Language / Idioma">
@@ -326,6 +372,12 @@
         <svg class="i" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 2.6-6.3L3 8M3 3v5h5"/></svg>
         <div class="tx"><b data-i18n="reboot.title">Falta reiniciar o Windows</b><span data-i18n="reboot.body">Reinicie 1x pro console aceitar o PC como gateway. Se já conecta, pode ignorar.</span></div>
         <button onclick="doReboot()" data-i18n="reboot.btn">Reiniciar</button>
+      </div>
+
+      <div class="reboot" id="opcodesBanner">
+        <svg class="i" viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3Z"/></svg>
+        <div class="tx"><b data-i18n="opcodes.title">Opcodes desatualizados</b><span data-i18n="opcodes.body">O jogo atualizou e o Mitigus não reconhece a conexão do console.</span></div>
+        <button onclick="updateOpcodesBanner(event)" data-i18n="opcodes.btn">Atualizar</button>
       </div>
 
       <div class="statusbar">
@@ -467,6 +519,30 @@
       <div class="note" data-i18n-html="note">Painel só na sua rede local. <b>Nunca</b> exponha esta porta à internet.<br>Ferramenta de mitigação de latência — uso por sua conta e risco.</div>
     </div>
 
+    <!-- ════════════ DPS METER ════════════ -->
+    <div class="screen" id="meter">
+      <div class="tabs" style="padding: 2px 0 10px; display: flex; align-items: center; gap: 6px;">
+        <button class="tab-btn active" data-metric="dps" data-i18n="dps.metric.raw">DPS Bruto</button>
+        <button class="tab-btn" data-metric="rdps" data-i18n="dps.metric.rdps">rDPS</button>
+        <button class="tab-btn" data-metric="adps" data-i18n="dps.metric.adps">aDPS</button>
+        <button class="tab-btn" data-metric="ndps" data-i18n="dps.metric.ndps">nDPS</button>
+        <button class="tab-btn" id="dpsReset" style="max-width: 80px; background: oklch(0.25 0.05 20); color: var(--warn); border-color: oklch(0.4 0.05 20 / .4);" data-i18n="dps.reset">Resetar</button>
+      </div>
+
+      <div class="total">
+        <div class="big"><span id="dpsTVal">0</span><small id="dpsTLabel">DPS</small></div>
+        <div class="meta">
+          <span><b id="dpsDur">0:00</b> <i data-i18n="dps.duration">duração</i></span>
+          <i>·</i>
+          <span><b id="dpsDmg">0</b> <i data-i18n="dps.damage">dano</i></span>
+          <i>·</i>
+          <span><i data-i18n="dps.encounter">luta</i> <b id="dpsEnc">0</b></span>
+        </div>
+      </div>
+
+      <main id="dpsList"></main>
+    </div>
+
    </div>
   </div>
 
@@ -480,11 +556,15 @@ let slidingUntil=0,lastN=null,routeInit=false;
 const LOCALE={en:"en-US",pt:"pt-BR",es:"es-ES"};
 const MSG={
  en:{
-  "nav.panel":"Dashboard","nav.config":"Settings",
+  "nav.panel":"Dashboard","nav.meter":"DPS Meter","nav.config":"Settings",
+  "dps.metric.raw":"Raw DPS","dps.metric.rdps":"rDPS","dps.metric.adps":"aDPS","dps.metric.ndps":"nDPS",
+  "dps.reset":"Reset","dps.duration":"duration","dps.damage":"damage","dps.encounter":"fight",
+  "dps.waiting":"Awaiting combat…","dps.waitingSub":"Enter combat (or hit a training dummy). DPS will appear here in real time.",
   "win.min":"Minimize","win.max":"Maximize","win.close":"Close (to tray)","win.drag":"drag to move",
   "offline":"No connection to Mitigus. Retrying…",
   "reboot.title":"Windows restart needed","reboot.body":"Restart once so the console accepts the PC as gateway. If it already connects, ignore this.",
   "reboot.btn":"Restart","reboot.confirm":"Restart Windows now? Save your files first.","reboot.alert":"Windows will restart in 20 seconds.",
+  "opcodes.title":"Outdated game opcodes","opcodes.body":"The game has updated and Mitigus does not recognize the console's connection.","opcodes.btn":"Update now",
   "status.mitigating":"Mitigating","status.paused":"Paused","status.serverLabel":"Server:",
   "game.waiting0":"waiting","game.active":"Game active","game.idle":"game idle","game.waiting":"waiting for game",
   "hero.label":"Animation lock · last cut","hero.chip":"−{n} ms per action",
@@ -524,15 +604,19 @@ const MSG={
   "route.gpn":"GPN mode","route.gpnSub":"Let your <b>ExitLag, NoPing or Mudfish</b> optimize the console's route. Turn the GPN on here on the PC and select FFXIV — Mitigus hands the game traffic to it, as if the console were the PC.",
   "route.vpsWarn":"<b>Advanced — your own VPS.</b> Instead of a GPN, it sends game traffic through your own server (VPS) via SOCKS5. Getting this wrong drops the connection. The two cannot be on at once. Without a VPS, leave it off.",
   "route.vps":"Use VPS route (SOCKS5)","route.hostPh":"VPS IP or host","route.portPh":"port",
-  "log.title":"Event log","log.waiting":"waiting…","log.empty":"(no events yet)","log.path":"Everything is saved to <b>{path}</b> — send this file for analysis.",
+"log.title":"Event log","log.waiting":"waiting…","log.empty":"(no events yet)","log.path":"Everything is saved to <b>{path}</b> — send this file for analysis.",
   "note":"Dashboard is on your local network only. <b>Never</b> expose this port to the internet.<br>Latency-mitigation tool — use at your own risk."
  },
  pt:{
-  "nav.panel":"Painel","nav.config":"Configuração",
+  "nav.panel":"Painel","nav.meter":"DPS Meter","nav.config":"Configuração",
+  "dps.metric.raw":"DPS Bruto","dps.metric.rdps":"rDPS","dps.metric.adps":"aDPS","dps.metric.ndps":"nDPS",
+  "dps.reset":"Resetar","dps.duration":"duração","dps.damage":"dano","dps.encounter":"luta",
+  "dps.waiting":"Aguardando combate…","dps.waitingSub":"Entre numa luta (ou bata num boneco de treino). O DPS aparece aqui em tempo real.",
   "win.min":"Minimizar","win.max":"Maximizar","win.close":"Fechar (vai pra bandeja)","win.drag":"arraste para mover",
   "offline":"Sem conexão com o Mitigus. Tentando de novo…",
   "reboot.title":"Falta reiniciar o Windows","reboot.body":"Reinicie 1x pro console aceitar o PC como gateway. Se já conecta, pode ignorar.",
   "reboot.btn":"Reiniciar","reboot.confirm":"Reiniciar o Windows agora? Salve seus arquivos antes.","reboot.alert":"O Windows vai reiniciar em 20 segundos.",
+  "opcodes.title":"Opcodes desatualizados","opcodes.body":"O jogo atualizou e o Mitigus não reconhece a conexão do console.","opcodes.btn":"Atualizar agora",
   "status.mitigating":"Mitigando","status.paused":"Pausado","status.serverLabel":"Servidor:",
   "game.waiting0":"aguardando","game.active":"Jogo ativo","game.idle":"jogo ocioso","game.waiting":"aguardando jogo",
   "hero.label":"Trava de animação · último corte","hero.chip":"−{n} ms por ação",
@@ -576,11 +660,15 @@ const MSG={
   "note":"Painel só na sua rede local. <b>Nunca</b> exponha esta porta à internet.<br>Ferramenta de mitigação de latência — uso por sua conta e risco."
  },
  es:{
-  "nav.panel":"Panel","nav.config":"Configuración",
+  "nav.panel":"Panel","nav.meter":"DPS Meter","nav.config":"Configuración",
+  "dps.metric.raw":"DPS Bruto","dps.metric.rdps":"rDPS","dps.metric.adps":"aDPS","dps.metric.ndps":"nDPS",
+  "dps.reset":"Reiniciar","dps.duration":"duración","dps.damage":"daño","dps.encounter":"combate",
+  "dps.waiting":"Esperando combate…","dps.waitingSub":"Entra en combate (o golpea un muñeco de entrenamiento). El DPS aparecerá aquí en tiempo real.",
   "win.min":"Minimizar","win.max":"Maximizar","win.close":"Cerrar (a la bandeja)","win.drag":"arrastra para mover",
   "offline":"Sin conexión con Mitigus. Reintentando…",
   "reboot.title":"Falta reiniciar Windows","reboot.body":"Reinicia una vez para que la consola acepte el PC como puerta de enlace. Si ya conecta, ignóralo.",
   "reboot.btn":"Reiniciar","reboot.confirm":"¿Reiniciar Windows ahora? Guarda tus archivos antes.","reboot.alert":"Windows se reiniciará en 20 segundos.",
+  "opcodes.title":"Opcodes desactualizados","opcodes.body":"El juego se ha actualizado y Mitigus no reconoce la conexión de la consola.","opcodes.btn":"Actualizar ahora",
   "status.mitigating":"Mitigando","status.paused":"Pausado","status.serverLabel":"Servidor:",
   "game.waiting0":"esperando","game.active":"Juego activo","game.idle":"juego inactivo","game.waiting":"esperando el juego",
   "hero.label":"Bloqueo de animación · último recorte","hero.chip":"−{n} ms por acción",
@@ -685,6 +773,9 @@ async function doReboot(){if(!confirm(tr("reboot.confirm")))return;
 async function updateOpcodes(e){e.stopPropagation();const b=e.currentTarget,old=b.innerHTML;b.textContent="…";b.disabled=true;
   let ok=false;try{const r=await api("/api/opcodes/update",{method:"POST"});ok=r.ok!==false}catch(_){ok=false}
   b.textContent=ok?"✓":tr("btn.error");setTimeout(()=>{b.innerHTML=old;b.disabled=false;refresh()},1300)}
+async function updateOpcodesBanner(e){const b=e.currentTarget;b.textContent="…";b.disabled=true;
+  let ok=false;try{const r=await api("/api/opcodes/update",{method:"POST"});ok=r.ok!==false}catch(_){ok=false}
+  b.textContent=ok?"✓":tr("btn.error");setTimeout(()=>{b.textContent=tr("opcodes.btn");b.disabled=false;refresh()},1300)}
 function copyIp(e){e.stopPropagation();const ip=$("pcip2").textContent;
   if(ip&&ip!=="—"){navigator.clipboard&&navigator.clipboard.writeText(ip);const b=e.currentTarget,o=b.innerHTML;b.textContent=tr("btn.copied");setTimeout(()=>b.innerHTML=o,1200)}}
 function copyPhone(e){const u=$("phoneUrl").textContent;
@@ -727,6 +818,7 @@ async function refresh(){
     const needReboot=!!info.reboot_pending;
     $("rebootBanner").classList.toggle("show",needReboot);
     const opcodesBad=info.opcodes_count>0 && s.flows>0 && info.opcodes_matched===false;
+    $("opcodesBanner").classList.toggle("show",opcodesBad);
     const warnTab=needReboot||info.oodle_missing||opcodesBad;
     $("tabConfig").classList.toggle("warn",warnTab);
 
@@ -826,7 +918,139 @@ LANG=detectLang();
 (function(){const ls=$("langSel");if(ls){ls.value=LANG;ls.onchange=()=>setLang(ls.value);}})();
 applyI18n();
 fetch("/api/lang?lang="+LANG,{method:"POST"}).catch(()=>{});
-refresh();refreshLog();setInterval(refresh,1000);setInterval(refreshLog,2000);
+
+/* ── DPS Meter logic ── */
+const JOB_COLORS = {
+  PLD:"oklch(0.72 0.10 240)", WAR:"oklch(0.62 0.17 25)", DRK:"oklch(0.55 0.14 320)", GNB:"oklch(0.70 0.07 70)",
+  WHM:"oklch(0.92 0.04 110)", SCH:"oklch(0.70 0.12 275)", AST:"oklch(0.74 0.12 70)", SGE:"oklch(0.78 0.10 215)",
+  MNK:"oklch(0.78 0.11 70)", DRG:"oklch(0.62 0.14 260)", NIN:"oklch(0.66 0.13 15)", SAM:"oklch(0.80 0.10 50)",
+  RPR:"oklch(0.58 0.13 350)", VPR:"oklch(0.74 0.15 150)",
+  BRD:"oklch(0.82 0.09 130)", MCH:"oklch(0.80 0.10 195)", DNC:"oklch(0.82 0.09 20)",
+  BLM:"oklch(0.62 0.15 300)", SMN:"oklch(0.72 0.13 165)", RDM:"oklch(0.66 0.16 0)", PCT:"oklch(0.80 0.12 340)",
+};
+const RANK_COLORS = ["var(--cyan)","var(--purple)","var(--on)","var(--warn)",
+                     "oklch(0.74 0.12 70)","oklch(0.70 0.13 350)","oklch(0.72 0.10 260)","var(--bad)"];
+
+const dpsFmt = n => Math.round(n).toLocaleString(LOCALE[LANG] || "pt-BR");
+const dpsMmss = s => { s=Math.max(0,Math.round(s)); return Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); };
+
+const dpsList = $("dpsList");
+const dpsRows = new Map();
+let currentDpsMetric = "dps";
+let dpsEnabled = false;
+
+document.querySelectorAll("#meter .tab-btn[data-metric]").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll("#meter .tab-btn[data-metric]").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    currentDpsMetric = btn.dataset.metric;
+    tickDps();
+  };
+});
+
+$("dpsReset").onclick = async () => {
+  try { await api("/api/reset", {method:"POST"}); } catch(e) {}
+  tickDps();
+};
+
+function dpsEmptyState(){
+  if (!dpsList) return;
+  dpsList.innerHTML =
+    '<div class="empty"><svg class="i e-spark" viewBox="0 0 24 24" style="stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;width:34px;height:34px;color:var(--cyan-dim);margin:0 auto 12px;opacity:.7"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>'
+    + '<h2>' + tr("dps.waiting") + '</h2>'
+    + '<p>' + tr("dps.waitingSub") + '</p></div>';
+  dpsRows.clear();
+}
+
+function dpsRowEl(){
+  const el = document.createElement("div"); el.className="row";
+  el.innerHTML =
+    '<div class="fill"></div><div class="rank"></div>'
+    + '<div class="who"><span class="nmrow"><img class="job-icon" src="" onerror="this.style.display=\'none\'" /><span class="nm"></span><span class="job"></span></span>'
+    + '<span class="sub"><span class="lv"></span><span class="crit"></span><span class="dh"></span></span>'
+    + '<span class="top"></span></div>'
+    + '<div class="num"><div class="dps"></div><div class="pct"></div></div>';
+  return el;
+}
+
+function dpsColor(a, i){ return (a.job && JOB_COLORS[a.job]) || RANK_COLORS[i % RANK_COLORS.length]; }
+
+function renderDps(d){
+  const labelMap = { dps: "DPS", rdps: "rDPS", adps: "aDPS", ndps: "nDPS" };
+  $("dpsTLabel").textContent = labelMap[currentDpsMetric];
+  
+  const totalDps = currentDpsMetric === "dps" ? d.total_dps : d.actors.reduce((acc, a) => acc + (a[currentDpsMetric] || 0), 0);
+  $("dpsTVal").textContent = dpsFmt(totalDps);
+  $("dpsDur").textContent = dpsMmss(d.duration);
+  $("dpsDmg").textContent = dpsFmt(d.total_damage);
+  $("dpsEnc").textContent = d.encounters || 0;
+
+  if(!d.actors.length){ dpsEmptyState(); return; }
+  if(dpsList.querySelector(".empty")) dpsList.innerHTML = "";
+  
+  const sortedActors = [...d.actors].sort((x, y) => (y[currentDpsMetric] || 0) - (x[currentDpsMetric] || 0));
+  const top = sortedActors.length ? (sortedActors[0][currentDpsMetric] || 1) : 1;
+  const seen = new Set();
+  
+  sortedActors.forEach((a,i)=>{
+    seen.add(a.id);
+    let el = dpsRows.get(a.id);
+    if(!el){ el = dpsRowEl(); dpsRows.set(a.id, el); }
+    dpsList.appendChild(el);
+    const c = dpsColor(a,i);
+    const val = a[currentDpsMetric] || 0;
+    el.querySelector(".fill").style.width = (100*val/top).toFixed(1)+"%";
+    el.querySelector(".fill").style.background = c;
+    el.querySelector(".rank").textContent = i+1;
+    const nm = el.querySelector(".nm"); nm.textContent = a.name; nm.style.color = a.is_self ? "var(--cyan)" : "var(--txt)";
+    const jImg = el.querySelector(".job-icon");
+    if(a.job){
+      jImg.src = "https://cdn.jsdelivr.net/gh/xivapi/classjob-icons@master/svg/" + a.job.toLowerCase() + ".svg";
+      jImg.style.display = "block";
+    } else {
+      jImg.style.display = "none";
+    }
+    const jt = el.querySelector(".job");
+    if(a.job){ jt.textContent = a.job; jt.style.display=""; jt.style.color = c; }
+    else { jt.style.display = "none"; }
+    const lv = el.querySelector(".lv");
+    if(a.level){ lv.textContent = "Lv"+a.level; lv.style.display=""; }
+    else { lv.style.display = "none"; }
+    const tp = el.querySelector(".top");
+    if(a.top_action){ tp.textContent = "↳ "+a.top_action; tp.style.display=""; }
+    else { tp.style.display = "none"; }
+    el.querySelector(".crit").textContent = "crit "+a.crit.toFixed(0)+"%";
+    el.querySelector(".dh").textContent = "DH "+a.dh.toFixed(0)+"%";
+    el.querySelector(".dps").textContent = dpsFmt(val);
+    el.querySelector(".dps").style.color = c;
+    const pctVal = totalDps ? (100 * val / totalDps) : 0.0;
+    el.querySelector(".pct").textContent = pctVal.toFixed(1)+"%";
+  });
+  for(const [id,el] of dpsRows){ if(!seen.has(id)){ el.remove(); dpsRows.delete(id); } }
+}
+
+async function tickDps(){
+  try{
+    const d = await api("/api/dps");
+    if(!dpsEnabled){
+      dpsEnabled = true;
+      const t = $("tabMeter");
+      if(t) t.style.display = "";
+    }
+    const tab = $("tabMeter");
+    if(tab && tab.classList.contains("on")){
+      renderDps(d);
+    }
+  } catch(e){
+    dpsEnabled = false;
+    const t = $("tabMeter");
+    if(t) t.style.display = "none";
+  }
+}
+
+dpsEmptyState();
+refresh();refreshLog();tickDps();
+setInterval(refresh,1000);setInterval(refreshLog,2000);setInterval(tickDps,600);
 </script>
 </body>
 </html>

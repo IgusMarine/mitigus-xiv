@@ -1,0 +1,23 @@
+============================================================
+  ⚠️ AVISO: MÓDULO DPS INTEGRADO AO APLICATIVO PRINCIPAL ⚠️
+============================================================
+
+Este medidor de DPS (que rodava no antigo 'Mitigus DPS.exe' 
+e na porta 8088) foi totalmente integrado ao aplicativo 
+principal como uma aba nativa!
+
+------------------------------------------------------------
+ O que mudou:
+------------------------------------------------------------
+- Você não precisa mais abrir um executável separado ou usar 
+  portas adicionais no navegador.
+- Os dados de combate agora aparecem na aba "DPS" na barra 
+  de título superior do próprio "Mitigus XIV App.exe".
+- A aba "DPS" se torna visível automaticamente assim que você 
+  entra em combate.
+- O funcionamento e as métricas (Bruto, rDPS, aDPS, nDPS) são 
+  as mesmas, mas totalmente unificadas e mais leves.
+
+Consulte o arquivo "LEIA-ME (para o amigo).txt" para o guia 
+de configuração geral do console.
+============================================================

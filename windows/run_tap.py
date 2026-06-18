@@ -27,9 +27,16 @@ IMPORTANTE (Oodle é stateful):
 
 Uso (como Administrador):
     python run_tap.py            (precisa do ffxiv_dx11.exe em vendor\\ ou instalado)
+    python run_tap.py --meter    (DPS METER AO VIVO: abre a UI no navegador e
+                                  mostra o DPS do SEU jogo em tempo real)
+    python run_tap.py --out luta.jsonl   (grava os segmentos IPC pós-Oodle p/ deob)
+
+Para o --meter: comece o tap, TROQUE DE ZONA (teleporte) p/ o deob pegar a chave,
+abra http://127.0.0.1:8088 e entre em combate. O DPS aparece ao vivo.
 """
 from __future__ import annotations
 
+import argparse
 import os
 import sys
 import time
@@ -37,6 +44,7 @@ import time
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
+from mitigus.deob.constants import LATEST
 from mitigus.net.adapters import is_admin
 from mitigus.net.ports import build_filter, format_ranges, port_in_ranges
 from mitigus.paths import app_dir
@@ -107,6 +115,14 @@ class _Conn:
 
 
 def main() -> int:
+    ap = argparse.ArgumentParser(description="Mitigus XIV — TAP read-only (captura/meter opcional)")
+    ap.add_argument("--out", help="grava os segmentos IPC pós-Oodle num .jsonl (p/ deob)")
+    ap.add_argument("--meter", action="store_true",
+                    help="DPS meter AO VIVO: desofusca e serve a UI Neon Bars no navegador")
+    ap.add_argument("--meter-port", type=int, default=8088, help="porta do painel de DPS")
+    ap.add_argument("--version", default=LATEST, help="versão do jogo p/ o deob")
+    args = ap.parse_args()
+
     print("=== Mitigus XIV — TAP (validação read-only do seu PC) ===")
     if not is_admin():
         print("! Rode como Administrador (o WinDivert carrega um driver de kernel).")
@@ -144,7 +160,39 @@ def main() -> int:
                 counters["cut"] += 1
         print(f"  [tap] {m}")
 
-    factory, _ = run_proxy._build_mitigation_factory(exe, None, 0.075, log, hub=None)
+    sinks = []
+    recorder = None
+    meter_server = None
+    if args.out:
+        from mitigus.capture.recorder import SegmentRecorder
+
+        recorder = SegmentRecorder(args.out, started_ms=int(time.time() * 1000))
+        print(f"  CAPTURA ligada -> {args.out}  (gravando segmentos pós-Oodle)")
+        sinks.append(recorder)
+    if args.meter:
+        from mitigus.meter.live import MeterFeed
+        from mitigus.meter.server import MeterServer
+        from mitigus.meter.tracker import DpsTracker
+        from mitigus.net.adapters import open_firewall_port
+
+        tracker = DpsTracker()
+        sinks.append(MeterFeed(tracker, version=args.version))
+        meter_server = MeterServer(tracker, port=args.meter_port)
+        mport = meter_server.start()
+        if open_firewall_port(mport):
+            print(f"  firewall: porta {mport} liberada na rede local")
+        print(f"  >>> DPS METER ao vivo: http://127.0.0.1:{mport}  (abra no navegador) <<<")
+
+    if len(sinks) == 1:
+        capture = sinks[0]
+    elif sinks:
+        def capture(direction, header, messages):
+            for s in sinks:
+                s(direction, header, messages)
+    else:
+        capture = None
+
+    factory, _ = run_proxy._build_mitigation_factory(exe, None, 0.075, log, hub=None, capture=capture)
 
     flt = build_filter()  # tcp and (porta do FFXIV em src OU dst)
     handle = pydivert.WinDivert(flt, layer=Layer.NETWORK, flags=Flag.SNIFF)
@@ -212,6 +260,12 @@ def main() -> int:
             handle.close()
         except Exception:
             pass
+        if recorder is not None:
+            recorder.close()
+            print(f"\n  captura: {recorder.bundles} bundles, {recorder.count} segmentos "
+                  f"-> {args.out}")
+        if meter_server is not None:
+            meter_server.stop()
 
     print("\n  ----------------------------------------------------------")
     print(f"  RESUMO: conexões={len(conns)}  ActionRequest={counters['req']}  "

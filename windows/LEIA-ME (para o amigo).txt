@@ -1,118 +1,79 @@
 ============================================================
-  MITIGUS XIV  -  como usar
-  (corta o atraso das habilidades do FFXIV jogando no PS5)
+  ⚡ M I T I G U S   X I V  —  GUIA DE USO RÁPIDO ⚡
+  (Corta o atraso das habilidades do FFXIV no console)
 ============================================================
 
-VEM EM VARIAS VERSOES (use a que preferir)
+O Mitigus XIV reduz o atraso das habilidades (animation lock)
+quando você joga no console (PS5/PS4), permitindo realizar 
+double-weaves perfeitamente como se estivesse no PC.
+
 ------------------------------------------------------------
-- Mitigus XIV (app).exe          -> RECOMENDADO. Abre uma JANELA
-                                    PROPRIA do programa (sem
-                                    navegador) que mostra tudo ao
-                                    vivo: ligar/desligar, os cortes,
-                                    ping, status. Como nao depende
-                                    de navegador, as informacoes
-                                    SEMPRE atualizam, em qualquer PC.
-- Mitigus XIV.exe                -> abre o painel no NAVEGADOR
-- Mitigus XIV (janela).exe       -> painel numa janela do Edge
-- Mitigus XIV (sem console).exe  -> roda na bandeja (icone perto do
-                                    relogio); painel pelo navegador.
-
->>> Se ficou em duvida, use o "Mitigus XIV (app).exe". <<<
-Os passos abaixo valem para todas. So escolha uma.
-
-
-O QUE VOCE PRECISA
+ 📦 O QUE VOCÊ PRECISA
 ------------------------------------------------------------
-- Um PC com Windows (64 bits) que fique LIGADO enquanto voce
-  joga, na MESMA rede do PS5. De preferencia tudo no cabo.
-- O ffxiv_dx11.exe (arquivo do jogo). Voce nao recebeu ele
-  junto de proposito (e do jogo, tem copyright). Pegue o SEU
-  assim: instale o TRIAL GRATUITO do FFXIV no PC (nao precisa
-  de assinatura). O programa acha o arquivo sozinho depois.
-  Download: https://www.finalfantasyxiv.com/freetrial/
+- Um PC com Windows (64 bits) na mesma rede do seu console.
+  O PC deve ficar ligado enquanto você joga.
+- O arquivo "ffxiv_dx11.exe" do jogo (x64).
+  Por direitos autorais, ele não vem no pacote. 
+  Como conseguir: Instale o TRIAL GRATUITO do FFXIV no PC.
+  O Mitigus vai achar o arquivo automaticamente na sua pasta 
+  da Steam ou da Square Enix.
 
-
-PASSO A PASSO
 ------------------------------------------------------------
-1) Instale o trial gratuito do FFXIV no PC (so pra ter o
-   arquivo do jogo). Nao precisa logar nem jogar nele.
-
-2) De dois cliques no programa (qualquer uma das versoes).
-   - Se aparecer "O Windows protegeu seu PC": clique em
-     "Mais informacoes" e depois "Executar assim mesmo".
-   - Aceite o aviso de Administrador (a janela azul/UAC).
-   - O antivirus pode reclamar (o programa mexe na rede) -
-     e normal, e so permitir/liberar.
-
-3) O painel ABRE SOZINHO no seu navegador. (Tambem abre uma
-   janela preta com mensagens - pode deixar ela aberta.)
-   Quer controlar pelo CELULAR? No topo do painel aparece o
-   endereco para digitar no navegador do celular (precisa
-   estar na mesma rede do PC).
-
-4) Se o painel disser "falta o ffxiv_dx11.exe", uma pasta
-   chamada "vendor" vai abrir sozinha. Copie pra dentro dela
-   o arquivo ffxiv_dx11.exe (fica em:
-   ...\FINAL FANTASY XIV - A Realm Reborn\game\ ) e
-   abra o "Mitigus XIV.exe" de novo.
-
-   >>> SO NA PRIMEIRA VEZ: o programa vai PERGUNTAR se voce quer
-       reiniciar o Windows ("reiniciar agora? Sim/Nao"). Clique
-       em SIM. O Windows so passa a compartilhar a internet com
-       o console DEPOIS de um reboot (e regra do proprio Windows).
-       Salve seus arquivos antes. So precisa fazer 1 vez. Se voce
-       clicar Nao, da pra reiniciar depois pelo botao "Reiniciar"
-       que aparece no topo do painel. <<<
-
-5) No PS5:
-   Ajustes -> Rede -> Configurar Conexao com a Internet ->
-   (use Cabo LAN) -> Personalizado, e coloque:
-     - Config. de IP  : Manual  (e o que libera o gateway)
-     - Endereco IP    : um IP livre da sua rede, no mesmo
-                        range do PC (ex.: PC 192.168.0.198 ->
-                        PS5 192.168.0.50)
-     - Mascara        : 255.255.255.0  (a da sua rede)
-     - Gateway padrao : O IP DO PC  <-- o que importa
-                        (esta escrito no painel, cartao
-                        "Conectar o PS5", com botao de copiar)
-     - DNS primario   : 1.1.1.1   (secundario 8.8.8.8)
-   Salve e teste a conexao.
-   (Para desfazer depois: volte "Config. de IP" para Automatico.)
-
-6) No painel, ligue o botao "Mitigacao". Entre em combate
-   no jogo e veja os cortes de atraso acontecendo ao vivo.
-   O slider "Ajuste fino" regula a margem (deixe em 75ms).
-
-
-IMPORTANTE (leia)
+ 🚀 PASSO A PASSO
 ------------------------------------------------------------
-- PS5 SEM INTERNET no primeiro teste? REINICIE O PC uma vez e
-  tente de novo. O compartilhamento de internet do Windows so
-  liga apos um reboot. So precisa na primeira vez.
+1) Abra a pasta "Mitigus XIV App" e execute o arquivo:
+       ▶ Mitigus XIV App.exe
+   
+   * Se o Windows mostrar um aviso azul, clique em "Mais 
+     informações" -> "Executar assim mesmo".
+   * Aceite o aviso de Administrador (UAC) para permitir 
+     que o driver de rede (WinDivert) seja carregado.
 
-- O PC precisa ficar LIGADO enquanto voce joga. O PS5 passa
-  a internet por ele. Se o PC desligar, o PS5 fica sem net
-  ate voce desfazer a config de rede do PS5.
+2) Na primeira vez que abrir, o app perguntará se você deseja
+   REINICIAR O WINDOWS. Clique em SIM. O compartilhamento 
+   de internet do Windows só entra em vigor após o reboot.
 
-- PARA DESFAZER: no PS5, volte o "Gateway padrao" para o IP
-  do seu roteador (ou deixe a rede em Automatico de novo).
+3) Abra o app novamente. Ele abrirá uma janela própria e 
+   iniciará o proxy de rede. O endereço IP do PC aparecerá 
+   na tela principal (no cartão "Conectar o PS5/PS4").
 
-- Isso e uma ferramenta de terceiros e vai contra os Termos
-  de Uso do FFXIV. O risco e da SUA conta. Use por sua conta
-  e risco. Nao mostre em live/print pra evitar problema.
+4) NO CONSOLE (PS5/PS4):
+   Vá em Configurar Conexão com a Internet -> Cabo LAN 
+   (recomendado) ou Wi-Fi -> Personalizado:
+     - Endereço IP    : Manual (coloque um IP livre da rede)
+     - Máscara        : 255.255.255.0
+     - Gateway padrão : O IP DO PC (copie do painel do app)
+     - DNS primário   : 1.1.1.1
+   Salve e teste a conexão. O console navegará através do PC.
 
-- Conserta o "weave" (o atraso das habilidades), nao o ping
-  em si. Movimento e mecanicas continuam no ping normal.
+5) LIGUE a "Mitigação" no painel, entre no FFXIV e jogue!
+   O painel exibirá os cortes de atraso ao vivo no PC.
+   Para ver no celular, basta abrir o link de IP mostrado.
 
-
-SE DER PROBLEMA / PRA AJUDAR A AJUSTAR
 ------------------------------------------------------------
-O programa salva tudo num arquivo chamado:
+ 🌐 SISTEMA DE GPN (ExitLag / NoPing / Mudfish)
+------------------------------------------------------------
+O Mitigus XIV possui integração automática com GPNs:
+- Mudfish: Funciona automaticamente em modo Layer 3.
+- ExitLag / NoPing: A integração agora é 100% AUTOMÁTICA!
+  Basta ativar o "Modo GPN" nas configurações do Mitigus, 
+  abrir o ExitLag/NoPing no PC e iniciar a rota do FFXIV.
+  * O Mitigus roda o proxy de rede com o nome de processo 
+    "ffxiv_dx11.exe" em segundo plano, fazendo com que a 
+    GPN o capture e otimize sem nenhuma configuração manual!
 
-    mitigus.log
+------------------------------------------------------------
+ 📊 MEDIDOR DE DPS INTEGRADO (DPS METER)
+------------------------------------------------------------
+A aba "DPS" aparece automaticamente no topo do aplicativo 
+assim que você entra em combate. Ela calcula o DPS Bruto, 
+rDPS, aDPS e nDPS da party em tempo real, atribuindo de 
+forma correta os DoTs e pets.
 
-...na MESMA pasta do "Mitigus XIV.exe". Quando testar, feche
-o programa e mande esse arquivo (e, se puder, um print do
-painel mostrando o "Status do sistema"). E com isso que da
-pra ver o que rolou e ajustar.
+------------------------------------------------------------
+ ⚠️ DESFAZER E VOLTAR AO NORMAL
+------------------------------------------------------------
+Se quiser desligar o PC e jogar sem o Mitigus:
+No console, volte as configurações de IP para "Automático" 
+(ou mude o Gateway de volta para o IP do seu roteador).
 ============================================================

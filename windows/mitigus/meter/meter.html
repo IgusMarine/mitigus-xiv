@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mitigus DPS</title>
+<style>
+  @font-face{font-family:"Chakra Petch";font-weight:400;font-display:swap;
+    src:url("/fonts/chakra-petch-latin-400-normal.woff2") format("woff2")}
+  @font-face{font-family:"Chakra Petch";font-weight:500;font-display:swap;
+    src:url("/fonts/chakra-petch-latin-500-normal.woff2") format("woff2")}
+  @font-face{font-family:"Chakra Petch";font-weight:600;font-display:swap;
+    src:url("/fonts/chakra-petch-latin-600-normal.woff2") format("woff2")}
+  @font-face{font-family:"Chakra Petch";font-weight:700;font-display:swap;
+    src:url("/fonts/chakra-petch-latin-700-normal.woff2") format("woff2")}
+  :root{
+    --bg:oklch(0.15 0.02 245); --surface:oklch(0.19 0.024 245);
+    --card:oklch(0.225 0.026 245); --line:oklch(0.32 0.03 245);
+    --line-soft:oklch(0.27 0.028 245); --txt:oklch(0.96 0.01 230);
+    --muted:oklch(0.72 0.02 235); --faint:oklch(0.56 0.022 238);
+    --cyan:oklch(0.82 0.12 210); --cyan-dim:oklch(0.62 0.10 215);
+    --purple:oklch(0.74 0.15 318); --on:oklch(0.80 0.14 165);
+    --warn:oklch(0.84 0.13 80); --bad:oklch(0.70 0.17 22);
+    --glow:oklch(0.82 0.12 210 / .35);
+    --font:"Chakra Petch","Bahnschrift","Segoe UI",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    background:
+      radial-gradient(120% 55% at 50% -8%, oklch(0.82 0.12 210 / .10), transparent 55%),
+      radial-gradient(90% 50% at 100% 108%, oklch(0.74 0.15 318 / .07), transparent 55%),
+      var(--bg);
+    color:var(--txt);font-family:var(--font);font-variant-numeric:tabular-nums;
+    -webkit-font-smoothing:antialiased;display:flex;flex-direction:column;height:100%}
+
+  header{display:flex;align-items:center;gap:10px;padding:12px 16px 8px}
+  .brand{font-size:15px;font-weight:600;letter-spacing:.02em;display:flex;align-items:center;gap:8px}
+  .brand b{color:var(--cyan)}
+  .brand .spark{width:18px;height:18px;color:var(--cyan)}
+  .live{margin-left:2px;font-size:10.5px;font-weight:600;letter-spacing:.12em;color:var(--faint);
+    border:1px solid var(--line-soft);border-radius:20px;padding:2px 8px}
+  .live.on{color:var(--on);border-color:oklch(0.5 0.12 165)}
+  .live.on .dot{background:var(--on);box-shadow:0 0 8px var(--on);animation:p 1.4s infinite}
+  .live .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--faint);margin-right:5px;vertical-align:middle}
+  @keyframes p{50%{opacity:.35}}
+  .btn{margin-left:auto;background:var(--surface);color:var(--muted);border:1px solid var(--line);
+    border-radius:8px;font-family:inherit;font-size:12px;font-weight:600;padding:6px 12px;cursor:pointer}
+  .btn:hover{color:var(--cyan);border-color:var(--cyan-dim)}
+
+  .tabs{display:flex;gap:6px;padding:2px 16px 10px}
+  .tab-btn{flex:1;background:var(--surface);color:var(--muted);border:1px solid var(--line-soft);
+    border-radius:8px;font-family:inherit;font-size:11.5px;font-weight:600;padding:6px 4px;cursor:pointer;
+    text-align:center;transition:all .15s ease}
+  .tab-btn:hover{color:var(--txt);border-color:var(--line)}
+  .tab-btn.active{background:oklch(0.22 0.05 210);color:var(--cyan);border-color:var(--cyan-dim);
+    box-shadow:0 0 8px var(--glow)}
+
+  .total{display:flex;align-items:baseline;gap:14px;padding:2px 18px 12px;flex-wrap:wrap}
+  .total .big{font-size:52px;font-weight:700;line-height:.9;letter-spacing:-.02em;color:var(--cyan);
+    text-shadow:0 0 26px var(--glow)}
+  .total .big small{font-size:18px;font-weight:500;color:var(--cyan-dim);text-shadow:none;margin-left:4px}
+  .total .meta{font-size:12.5px;color:var(--muted);display:flex;gap:8px;align-items:center}
+  .total .meta b{color:var(--txt);font-weight:600}
+  .total .meta i{color:var(--faint);font-style:normal}
+
+  main{flex:1;overflow-y:auto;padding:2px 12px 16px;display:flex;flex-direction:column;gap:7px}
+  main::-webkit-scrollbar{width:9px} main::-webkit-scrollbar-thumb{background:oklch(0.3 0.02 245);border-radius:9px;border:2px solid var(--bg)}
+
+  .row{position:relative;border:1px solid var(--line-soft);border-radius:11px;overflow:hidden;
+    background:var(--card);padding:9px 13px;display:flex;align-items:center;gap:11px;min-height:48px}
+  .row .fill{position:absolute;inset:0;width:0;border-radius:inherit;opacity:.20;
+    transition:width .45s cubic-bezier(.22,.61,.36,1);z-index:0}
+  .row>*{position:relative;z-index:1}
+  .rank{font-size:12px;font-weight:700;color:var(--faint);width:18px;text-align:center;flex:0 0 auto}
+  .who{display:flex;flex-direction:column;min-width:0;flex:1}
+  .who .nm{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .who .sub{font-size:11px;color:var(--faint);display:flex;gap:8px;margin-top:1px}
+  .who .sub .crit{color:var(--warn)} .who .sub .dh{color:var(--purple)}
+  .who .top{font-size:10.5px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+  .nmrow{display:flex;align-items:center;gap:7px;min-width:0}
+  .job{font-size:9.5px;font-weight:700;letter-spacing:.04em;padding:1px 6px;border-radius:5px;
+    background:oklch(0.26 0.02 245);border:1px solid var(--line-soft);flex:0 0 auto}
+  .num{text-align:right;flex:0 0 auto}
+  .num .dps{font-size:19px;font-weight:700;line-height:1}
+  .num .pct{font-size:11.5px;color:var(--muted);margin-top:2px}
+
+  .empty{margin:auto;text-align:center;color:var(--muted);padding:40px 16px}
+  .empty .e-spark{width:34px;height:34px;color:var(--cyan-dim);margin:0 auto 12px;opacity:.7}
+  .empty h2{font-size:15px;font-weight:600;color:var(--txt);margin-bottom:5px}
+  .empty p{font-size:12.5px;line-height:1.55;max-width:320px;margin:0 auto}
+  svg.i{display:block;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+</style>
+</head>
+<body>
+  <header>
+    <span class="brand">
+      <svg class="i spark" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>
+      Mitigus <b>DPS</b>
+    </span>
+    <span class="live" id="live"><span class="dot"></span><span id="liveTxt">parado</span></span>
+    <button class="btn" id="reset">Resetar</button>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-metric="dps">DPS Bruto</button>
+    <button class="tab-btn" data-metric="rdps">rDPS</button>
+    <button class="tab-btn" data-metric="adps">aDPS</button>
+    <button class="tab-btn" data-metric="ndps">nDPS</button>
+  </div>
+
+  <div class="total">
+    <div class="big"><span id="tdps">0</span><small id="totalLabel">DPS</small></div>
+    <div class="meta">
+      <span><b id="dur">0:00</b> <i>duração</i></span>
+      <i>·</i>
+      <span><b id="tdmg">0</b> <i>dano</i></span>
+      <i>·</i>
+      <span><i>luta</i> <b id="enc">0</b></span>
+    </div>
+  </div>
+
+  <main id="list"></main>
+
+<script>
+  // Cores por job (FFLogs). Sem detecção de job ainda -> fallback por posição.
+  const JOB_COLORS = {
+    PLD:"oklch(0.72 0.10 240)", WAR:"oklch(0.62 0.17 25)", DRK:"oklch(0.55 0.14 320)", GNB:"oklch(0.70 0.07 70)",
+    WHM:"oklch(0.92 0.04 110)", SCH:"oklch(0.70 0.12 275)", AST:"oklch(0.74 0.12 70)", SGE:"oklch(0.78 0.10 215)",
+    MNK:"oklch(0.78 0.11 70)", DRG:"oklch(0.62 0.14 260)", NIN:"oklch(0.66 0.13 15)", SAM:"oklch(0.80 0.10 50)",
+    RPR:"oklch(0.58 0.13 350)", VPR:"oklch(0.74 0.15 150)",
+    BRD:"oklch(0.82 0.09 130)", MCH:"oklch(0.80 0.10 195)", DNC:"oklch(0.82 0.09 20)",
+    BLM:"oklch(0.62 0.15 300)", SMN:"oklch(0.72 0.13 165)", RDM:"oklch(0.66 0.16 0)", PCT:"oklch(0.80 0.12 340)",
+  };
+  const RANK_COLORS = ["var(--cyan)","var(--purple)","var(--on)","var(--warn)",
+                       "oklch(0.74 0.12 70)","oklch(0.70 0.13 350)","oklch(0.72 0.10 260)","var(--bad)"];
+  const fmt = n => Math.round(n).toLocaleString("pt-BR");
+  const mmss = s => { s=Math.max(0,Math.round(s)); return Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); };
+
+  const list = document.getElementById("list");
+  const rows = new Map();   // id -> elementos (reuso p/ animar)
+  let currentMetric = "dps";
+
+  document.querySelectorAll(".tab-btn").forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      currentMetric = btn.dataset.metric;
+      tick();
+    };
+  });
+
+  function emptyState(){
+    list.innerHTML =
+      '<div class="empty"><svg class="i e-spark" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>'
+      + '<h2>Aguardando combate…</h2>'
+      + '<p>Entre numa luta (ou bata num boneco de treino). O DPS aparece aqui em tempo real.</p></div>';
+    rows.clear();
+  }
+
+  function rowEl(){
+    const el = document.createElement("div"); el.className="row";
+    el.innerHTML =
+      '<div class="fill"></div><div class="rank"></div>'
+      + '<div class="who"><span class="nmrow"><span class="nm"></span><span class="job"></span></span>'
+      + '<span class="sub"><span class="lv"></span><span class="crit"></span><span class="dh"></span></span>'
+      + '<span class="top"></span></div>'
+      + '<div class="num"><div class="dps"></div><div class="pct"></div></div>';
+    return el;
+  }
+
+  function color(a, i){ return (a.job && JOB_COLORS[a.job]) || RANK_COLORS[i % RANK_COLORS.length]; }
+
+  function render(d){
+    const live = document.getElementById("live");
+    const on = d.active && d.actors.length;
+    live.classList.toggle("on", !!on);
+    document.getElementById("liveTxt").textContent = on ? "AO VIVO" : "parado";
+    
+    const labelMap = { dps: "DPS", rdps: "rDPS", adps: "aDPS", ndps: "nDPS" };
+    document.getElementById("totalLabel").textContent = labelMap[currentMetric];
+    
+    const totalDps = currentMetric === "dps" ? d.total_dps : d.actors.reduce((acc, a) => acc + (a[currentMetric] || 0), 0);
+    document.getElementById("tdps").textContent = fmt(totalDps);
+    document.getElementById("dur").textContent = mmss(d.duration);
+    document.getElementById("tdmg").textContent = fmt(d.total_damage);
+    document.getElementById("enc").textContent = d.encounters || 0;
+
+    if(!d.actors.length){ emptyState(); return; }
+    if(list.querySelector(".empty")) list.innerHTML = "";
+    
+    const sortedActors = [...d.actors].sort((x, y) => (y[currentMetric] || 0) - (x[currentMetric] || 0));
+    const top = sortedActors.length ? (sortedActors[0][currentMetric] || 1) : 1;
+    const seen = new Set();
+    
+    sortedActors.forEach((a,i)=>{
+      seen.add(a.id);
+      let el = rows.get(a.id);
+      if(!el){ el = rowEl(); rows.set(a.id, el); }
+      list.appendChild(el);  // reordena por dano
+      const c = color(a,i);
+      const val = a[currentMetric] || 0;
+      el.querySelector(".fill").style.width = (100*val/top).toFixed(1)+"%";
+      el.querySelector(".fill").style.background = c;
+      el.querySelector(".rank").textContent = i+1;
+      const nm = el.querySelector(".nm"); nm.textContent = a.name; nm.style.color = a.is_self ? "var(--cyan)" : "var(--txt)";
+      const jt = el.querySelector(".job");
+      if(a.job){ jt.textContent = a.job; jt.style.display=""; jt.style.color = c; }
+      else { jt.style.display = "none"; }
+      const lv = el.querySelector(".lv");
+      if(a.level){ lv.textContent = "Lv"+a.level; lv.style.display=""; }
+      else { lv.style.display = "none"; }
+      const tp = el.querySelector(".top");
+      if(a.top_action){ tp.textContent = "↳ "+a.top_action; tp.style.display=""; }
+      else { tp.style.display = "none"; }
+      el.querySelector(".crit").textContent = "crit "+a.crit.toFixed(0)+"%";
+      el.querySelector(".dh").textContent = "DH "+a.dh.toFixed(0)+"%";
+      el.querySelector(".dps").textContent = fmt(val);
+      el.querySelector(".dps").style.color = c;
+      const pctVal = totalDps ? (100 * val / totalDps) : 0.0;
+      el.querySelector(".pct").textContent = pctVal.toFixed(1)+"%";
+    });
+    for(const [id,el] of rows){ if(!seen.has(id)){ el.remove(); rows.delete(id); } }
+  }
+
+  async function tick(){
+    try{ const r = await fetch("/api/dps",{cache:"no-store"}); render(await r.json()); }
+    catch(e){ /* servidor reiniciando? ignora */ }
+  }
+  document.getElementById("reset").onclick = async () => {
+    try{ await fetch("/api/reset",{method:"POST"}); }catch(e){}
+    tick();
+  };
+  emptyState(); tick(); setInterval(tick, 600);
+</script>
+</body>
+</html>
