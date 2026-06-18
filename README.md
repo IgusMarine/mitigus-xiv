@@ -1,78 +1,57 @@
 # Mitigus XIV
 
-Mitigador de latência do **FINAL FANTASY XIV** 100% nativo no **Windows**, pensado
-para quem joga no **console (PS5/PS4)** — onde plugins e addons não existem.
+**English** | [Português](README.pt-BR.md)
 
-Ele faz o que o [XivMitmLatencyMitigator](https://github.com/Soreepeong/XivMitmLatencyMitigator)
-/ [XivAlexander](https://github.com/Soreepeong/XivAlexander) fazem (descontar o RTT
-da rede da `animation_lock_duration` pra você conseguir encaixar dois *weaves*),
-mas **sem Linux, sem VM e sem mexer no console**: o PC vira o gateway do console,
-intercepta o tráfego do FFXIV na rede e corrige o lock em tempo real.
+**FINAL FANTASY XIV** latency mitigator 100% native on **Windows**, designed for playing on **consoles (PS5/PS4)** — where plugins and addons do not exist.
+
+It does what [XivMitmLatencyMitigator](https://github.com/Soreepeong/XivMitmLatencyMitigator) / [XivAlexander](https://github.com/Soreepeong/XivAlexander) do (subtracting network RTT from the `animation_lock_duration` so you can double-weave perfectly), but **without Linux, without VMs, and without modifying the console**: the PC becomes the console's gateway, intercepting FFXIV network traffic and correcting the lock in real-time.
 
 ```
-  PS5/PS4  ──gateway──►  PC (Windows)  ──►  Roteador  ──►  Servidores do FFXIV
+  PS5/PS4  ──gateway──►  PC (Windows)  ──►  Router  ──►  FFXIV Servers
                               │
-                              ├─ mascara (NAT) a internet geral do console
-                              ├─ desvia SÓ as conexões do FFXIV p/ um proxy local
-                              ├─ decodifica (Oodle) e corta o animation lock
-                              └─ painel (janela própria + http://IP:8080 no celular)
+                              ├─ masquerades (NAT) the console's general internet traffic
+                              ├─ redirects ONLY FFXIV connections to a local proxy
+                              ├─ decodes (Oodle) and cuts the animation lock
+                              └─ dashboard (native window + http://IP:8080 on mobile)
 ```
 
-## Como funciona
-- O console aponta o **gateway** para o PC. O Windows encaminha o tráfego; o Mitigus
-  faz NAT da internet geral e **desvia apenas as conexões do FFXIV** para um proxy local.
-- O proxy termina o TCP, decodifica os pacotes (Oodle, lido do `ffxiv_dx11.exe`) e
-  reescreve a `animation_lock_duration` subtraindo o RTT medido — com uma margem de
-  segurança ajustável (estilo NoClippy/adaptativa).
-- Um **painel** (janela sem a barra do Windows, via WebView2, + acessível no celular)
-  mostra o corte ao vivo, ping (rede vs. jogo), jitter e o status do sistema.
+## How it works
+- The console points its **gateway** to the PC. Windows forwards the traffic; Mitigus applies NAT for general internet traffic and **redirects only FFXIV connections** to a local proxy.
+- The proxy terminates the TCP connection, decodes the packets (using Oodle, loaded from `ffxiv_dx11.exe`), and rewrites the `animation_lock_duration` by subtracting the measured RTT — with an adjustable safety margin (NoClippy-style / adaptive).
+- A **dashboard** (frameless native window via WebView2, also accessible on mobile) displays real-time animation lock reductions, ping (network vs. game), jitter, and system status.
 
-## Requisitos
-- **Windows 10/11** (x64). Roda como **Administrador** (carrega o driver WinDivert).
-- **`ffxiv_dx11.exe`** — necessário pro Oodle. **NÃO vem no pacote (é copyright).**
-  Pegue do **trial gratuito** do FFXIV em qualquer PC Windows e coloque na pasta do
-  Mitigus (ou em `vendor\`). O app abre a pasta certa e avisa se faltar.
-- Console e PC na **mesma rede** (de preferência o PC no cabo).
-- O Windows precisa ser **reiniciado uma vez** depois de ativar o compartilhamento
-  (o app pergunta).
+## Requirements
+- **Windows 10/11** (x64). Must run as **Administrator** (loads the WinDivert kernel driver).
+- **`ffxiv_dx11.exe`** — required for Oodle decompression. **NOT included in the package (copyrighted).** You can get it from the **free trial** of FFXIV on any Windows PC and place it in the Mitigus folder (or under `vendor\`). The app automatically opens the folder and warns you if it is missing.
+- Console and PC on the **same local network** (PC on wired Ethernet recommended).
+- Windows needs to be **restarted once** after enabling internet sharing (the app will prompt you).
 
-## Como usar
-1. Extraia a pasta **"Mitigus XIV (app)"** e coloque seu `ffxiv_dx11.exe` dentro dela.
-2. Rode o **"Mitigus XIV (app).exe"** (aceite o aviso de Administrador / UAC).
-3. No console: **Rede → Configurar Internet → Manual** e aponte o **Gateway** para o
-   IP do PC (o painel mostra o IP). DNS primário `1.1.1.1`.
-4. Abra o FFXIV. O painel mostra os cortes ao vivo. No celular (mesma rede):
-   `http://IP_DO_PC:8080`.
+## How to use
+1. Extract the **"Mitigus XIV App"** folder and place your `ffxiv_dx11.exe` inside it.
+2. Run **"Mitigus XIV App.exe"** (accept the Administrator / UAC prompt).
+3. On the console: **Network → Set Up Internet Connection → Custom/Manual** and point the **Gateway** to the PC's IP address (the dashboard will show this IP). Set primary DNS to `1.1.1.1`.
+4. Open FFXIV. The dashboard will show live latency mitigation metrics. Access from your phone (on the same network) at: `http://PC_IP:8080`.
 
-## Build (a partir do código)
+## Build (from source)
 ```bash
 cd windows
 pip install -r requirements.txt
-python -m PyInstaller mitigus_xiv_native.spec   # gera dist/"Mitigus XIV (app)"/
-python -m unittest discover -s tests            # testes
+python -m PyInstaller mitigus_xiv_native.spec   # generates dist/"Mitigus XIV App"/
+python -m unittest discover -s tests            # tests
 ```
-Documentação técnica e os outros modos (console/janela/bandeja) em
-[`windows/README.md`](windows/README.md).
+Technical documentation and other running modes (console/window/tray) can be found in [`windows/README.md`](windows/README.md).
 
-## Manutenção
-- **A cada patch do jogo** os opcodes mudam — o Mitigus tenta atualizar sozinho ao
-  abrir (mesma fonte do XivAlexander); há um botão **Atualizar** no painel.
-- Em patches grandes, troque também o `ffxiv_dx11.exe` por um do cliente atualizado.
+## Maintenance
+- The game's opcodes shuffle with **every game patch** — Mitigus attempts to auto-update them on launch (using the same source as XivAlexander); there is also an **Update** button on the dashboard.
+- During major patches, remember to replace `ffxiv_dx11.exe` with the one from the updated game client.
 
-## ⚠️ Aviso (leia antes de usar)
-- Ferramenta **não-oficial**, **não afiliada nem endossada** pela Square Enix /
-  FINAL FANTASY XIV. FINAL FANTASY é marca da Square Enix.
-- **Área cinza dos Termos de Serviço.** O uso é **por sua conta e risco** e pode, em
-  tese, resultar em punição na conta. O ajuste fica do lado do cliente e mantém uma
-  margem de segurança, mas o risco **não é zero**.
-- Isso conserta o **weave**, não o ping real — movimento, mecânica e snapshot de dano
-  continuam sujeitos à latência da rede.
-- Fornecido **sem qualquer garantia**.
+## ⚠️ Disclaimer (Read before using)
+- Unofficial tool, not affiliated with or endorsed by Square Enix / FINAL FANTASY XIV. FINAL FANTASY is a registered trademark of Square Enix.
+- **Grey area of the Terms of Service.** Use at your own risk. While it adjusts animation lock client-side and maintains a safety buffer, the risk of account penalties is **not zero**.
+- This fixes the **animation lock/weaving**, not physical ping. Character movement, mechanics, and server-side damage snapshots remain subject to your real network latency.
+- Provided **without any warranty**.
 
-## Créditos
-- [XivMitmLatencyMitigator](https://github.com/Soreepeong/XivMitmLatencyMitigator) e
-  [XivAlexander](https://github.com/Soreepeong/XivAlexander) (Soreepeong) — a técnica
-  de mitigação e a fonte dos opcodes.
-- [WinDivert](https://github.com/basil00/WinDivert) (basil00) — interceptação de
-  pacotes em userland no Windows.
-- Fonte [Chakra Petch](https://fonts.google.com/specimen/Chakra+Petch) (SIL OFL 1.1).
+## Credits
+- [XivMitmLatencyMitigator](https://github.com/Soreepeong/XivMitmLatencyMitigator) and [XivAlexander](https://github.com/Soreepeong/XivAlexander) (Soreepeong) — the mitigation technique and source of opcodes.
+- [WinDivert](https://github.com/basil00/WinDivert) (basil00) — userland packet interception on Windows.
+- [Chakra Petch](https://fonts.google.com/specimen/Chakra+Petch) font (SIL OFL 1.1).
