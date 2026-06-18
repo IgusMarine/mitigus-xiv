@@ -1,49 +1,40 @@
-# Apontar o PS5 para o PC (topologia NIC única)
+# Pointing the PS5 to the PC (Single NIC Topology)
 
-Objetivo: fazer o tráfego do PS5 passar pelo PC Windows, para que o engine possa
-enxergá-lo (Fase 0) e, depois, interceptá-lo (Fase 1+).
+**English** | [Português](PS5-SETUP.pt-BR.md)
 
-## 1. Descubra o IP do PC
+Goal: Route PS5 network traffic through the Windows PC so the engine can detect it (Phase 0) and intercept it (Phase 1+).
 
-Rode, como Administrador, `setup\enable-routing.ps1`. No fim ele imprime o IP da
-LAN do PC (ex.: `192.168.0.10`). Esse é o **gateway** que o PS5 vai usar.
+## 1. Find the PC's IP address
 
-> Dê ao PC um IP fixo (reserva de DHCP pelo MAC no roteador, ou IP estático).
-> Se o IP do PC mudar, a config do PS5 quebra.
+Run `setup\enable-routing.ps1` as Administrator. At the end, it will print the PC's LAN IP address (e.g., `192.168.0.10`). This is the **gateway** the PS5 will use.
 
-## 2. Configure o PS5 manualmente
+> Assign a static IP or set up a DHCP reservation for the PC on your router. If the PC's IP address changes, the PS5 configuration will break.
 
-No PS5: **Ajustes → Rede → Configurar Conexão com a Internet → (sua rede) →
-Configuração Avançada / Manual** (use **cabo**, não Wi-Fi):
+## 2. Manually Configure the PS5
 
-| Campo            | Valor                                             |
+On the PS5: **Settings → Network → Set Up Internet Connection → (your network) → Advanced Settings / Manual** (use a **wired cable connection**, not Wi-Fi):
+
+| Field            | Value                                             |
 |------------------|---------------------------------------------------|
-| Endereço IP      | Manual — um IP livre na sua rede (ex. `192.168.0.50`) |
-| Máscara          | a da sua rede (normalmente `255.255.255.0`)       |
-| Gateway padrão   | **o IP do PC** (ex. `192.168.0.10`)               |
-| DNS primário     | o IP do roteador, ou `1.1.1.1`                     |
+| IP Address       | Manual — a free IP on your network (e.g., `192.168.0.50`) |
+| Subnet Mask      | your network mask (usually `255.255.255.0`)       |
+| Default Gateway  | **the PC's IP address** (e.g., `192.168.0.10`)   |
+| Primary DNS      | your router's IP, or `1.1.1.1`                    |
 
-Salve e teste a conexão. O PS5 passa a rotear pelo PC.
+Save and test the connection. The PS5 will now route its traffic through the PC.
 
-## 3. Rode o sniffer (no PC, como Admin)
+## 3. Run the Sniffer (on the PC, as Admin)
 
 ```
 python run_sniff.py --host 192.168.0.50
 ```
 
-(troque pelo IP do PS5). Entre numa zona / combate no jogo. Você deve ver o
-bloco **"FF14ARR detectado"** e os contadores subindo.
+(replace with the PS5's IP). Enter a zone or start combat in-game. You should see the **"FF14ARR detected"** block and the counters rising.
 
-## Reverter
+## Reverting
 
-Quando terminar, no PS5 volte o **Gateway padrão** para o IP do roteador, e no
-PC rode `setup\disable-routing.ps1`.
+When finished, change the PS5's **Default Gateway** back to your router's IP, and run `setup\disable-routing.ps1` on the PC.
 
-## Observação (NIC única)
+## Note (Single NIC)
 
-Nesta topologia o caminho de **volta** (servidor → PS5) tende a chegar do roteador
-direto ao PS5, pulando o PC — então a Fase 0 enxerga bem o tráfego de **saída**, o
-suficiente para validar a captura. A interceptação confiável dos dois sentidos
-(necessária para modificar o `ActionEffect`) vem na **Fase 1**, com o proxy
-transparente que termina o TCP no PC. Se quiser robustez máxima desde já, uma 2ª
-placa de rede (USB-Ethernet) dedicada ao PS5 elimina essa assimetria.
+In this single-NIC topology, the return path (server → PS5) tends to route directly from the router to the PS5, bypassing the PC. As a result, Phase 0 only intercepts **outbound** traffic, which is sufficient to validate packet capture. Reliable bi-directional interception (required to modify `ActionEffect`) is achieved in **Phase 1** via the transparent proxy terminating the TCP connection on the PC. For maximum robustness, adding a second network adapter (USB-Ethernet) dedicated to the PS5 eliminates this routing asymmetry.
