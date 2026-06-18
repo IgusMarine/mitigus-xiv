@@ -1,105 +1,67 @@
-# Spike: desofuscação de pacotes do FFXIV (uso pessoal/privado)
+# Spike: FFXIV packet deobfuscation (personal/private use)
 
-Prova de conceito **isolada** (não é código de produção do Mitigus) que
-desofusca pacotes de combate do FFXIV a partir **só do tráfego de rede** —
-sem injetar no jogo e sem ler a memória do processo. Isso é o que viabiliza
-ler combate de um cliente de **console (PS5/PS4)** com um PC no meio do
-tráfego — a mesma topologia do Mitigus.
+**English** | [Português](README.pt-BR.md)
 
-## Por que isso é possível (o que eu tinha errado antes)
+An **isolated** proof of concept (not production Mitigus code) that deobfuscates FFXIV combat packets **solely from network traffic** — without game injection or process memory reading. This enables reading combat data from a **console (PS5/PS4)** client with a PC in the middle of the network path — the same topology used by Mitigus.
 
-A chave de desofuscação **não** depende de estado interno do cliente
-(`localRand`). O perchbirdd descobriu um caminho equivalente derivado da rede:
+## Why this is possible (what I got wrong before)
 
-1. O servidor manda 3 **seeds** num pacote inicializador (na rede).
-   - ≤7.3: dentro do `InitZone` (offsets 37/38/39/40).
-   - 7.4+: num pacote inicializador dedicado (offsets 22/23/24/28). O 7.4 só
-     **moveu** os seeds — não fechou o vetor passivo.
-2. **Tabelas estáticas** (`table0/1/2`, `midtable`, `daytable`,
-   `opcodekeytable`) são extraídas *offline* do `ffxiv_dx11.exe` por patch.
-   O perchbirdd publica os `.bin` (cobertura até 2026.06.10 / patch 7.5x).
-3. As 3 chaves saem de **aritmética pura** sobre seeds + tabelas (`Derive`).
-   Em 7.3+ há ainda uma **chave por opcode** (`opcodekeytable`).
-4. O **descramble** subtrai/XOR essas chaves nos campos certos de cada
-   pacote (ActionEffect = dano, PlayerSpawn = identidade/job, etc.).
+The deobfuscation key does **not** depend on the client's internal state (`localRand`). perchbirdd discovered an equivalent path derived from the network:
 
-## O que tem aqui
+1. The server sends 3 **seeds** in an initialization packet (over the network).
+   - ≤7.3: inside `InitZone` (offsets 37/38/39/40).
+   - 7.4+: in a dedicated initialization packet (offsets 22/23/24/28). Patch 7.4 only **moved** the seeds — it did not close the passive vector.
+2. **Static tables** (`table0/1/2`, `midtable`, `daytable`, `opcodekeytable`) are extracted *offline* from `ffxiv_dx11.exe` per patch. perchbirdd publishes the `.bin` files (coverage up to 2026.06.10 / patch 7.5x).
+3. The 3 keys are derived using **pure arithmetic** over the seeds + tables (`Derive`). In 7.3+, there is also an **opcode-specific key** (`opcodekeytable`).
+4. The **descramble** process subtracts/XORs these keys in the correct fields of each packet (`ActionEffect` = damage, `PlayerSpawn` = identity/job, etc.).
 
-| Arquivo | Papel | Origem do port |
+## What's in here
+
+| File | Role | Port origin |
 |---|---|---|
-| `constants.py` | offsets de tabela, modos, opcodes por versão | `Constants/Versions/*.cs` |
-| `keygen.py` | derivação das 3 chaves + chave-por-opcode | `Derivation/KeyGenerator{72,73,74}.cs` |
-| `unscramble.py` | descramble dos campos (e `scramble`, p/ testes) | `Unscramble/Unscrambler{72,73}.cs` |
-| `loader.py` | carrega os `.bin` + fachada `Deobfuscator` | `*Factory.cs` |
-| `data/<versão>/*.bin` | tabelas estáticas vendorizadas | repo perchbirdd |
-| `test_deob.py` | round-trip + determinismo | — |
+| `constants.py` | table offsets, modes, opcodes by version | `Constants/Versions/*.cs` |
+| `keygen.py` | derivation of the 3 keys + key-per-opcode | `Derivation/KeyGenerator{72,73,74}.cs` |
+| `unscramble.py` | descrambling fields (and scramble for testing) | `Unscramble/Unscrambler{72,73}.cs` |
+| `loader.py` | loads `.bin` files + Deobfuscator facade | `*Factory.cs` |
+| `data/<version>/*.bin` | vendorized static tables | perchbirdd repository |
+| `test_deob.py` | round-trip + determinism | — |
 
-Crédito: **perchbirdd/Unscrambler** (licença WTFPL) e **NotNite/TemporalStasis**.
-Os `.bin` foram copiados do repo do perchbirdd; nenhum arquivo do jogo
-(`ffxiv_dx11.exe`) está aqui — usamos as tabelas já extraídas.
+Credits: **perchbirdd/Unscrambler** (WTFPL license) and **NotNite/TemporalStasis**. The `.bin` files were copied from perchbirdd's repository; no game files (`ffxiv_dx11.exe`) are present here — we use the pre-extracted tables.
 
-## Status de validação (honesto)
+## Validation Status (Honest)
 
 `python test_deob.py` → **11/11 OK**.
 
-O que os testes **PROVAM**:
-- A estrutura do descramble está certa e auto-consistente: offsets, larguras
-  (u16/u32/u64/byte), dispatch por opcode e a operação inversa (sub↔add, XOR
-  auto-inverso). `scramble → unscramble` recupera o original byte-a-byte nos
-  19 opcodes ofuscados.
-- A fiação da derivação: porta do modo, offsets dos seeds, negação de bits;
-  determinístico e sensível aos seeds. `unscramble_copy` não toca no original.
+What the tests **PROVE**:
+- The descramble structure is correct and self-consistent: offsets, widths (u16/u32/u64/byte), dispatch by opcode, and the inverse operations (sub ↔ add, self-inverse XOR). `scramble → unscramble` recovers the original byte-for-byte on all 19 obfuscated opcodes.
+- Derivation routing: mode detection, seed offsets, bit negation; deterministic and seed-sensitive. `unscramble_copy` does not modify the original buffer.
 
-O que os testes **NÃO PROVAM** (a fronteira honesta):
-- Que os **valores** das chaves batem byte-a-byte com os do **jogo**. O
-  round-trip usa as chaves derivadas de forma consistente nos dois sentidos,
-  então um eventual erro na aritmética do `Derive` ou no índice da chave-por-
-  opcode **se cancelaria** no round-trip. Isso só se confirma com:
-  - (a) uma **captura real do PS5** (1 sessão: pegar o inicializador + alguns
-    ActionEffect e ver se o dano sai coerente), ou
-  - (b) build do **C# de referência** e comparar `Derive` numa grade de seeds
-    (precisa do .NET SDK — não instalado aqui).
+What the tests **DO NOT PROVE** (the honest frontier):
+- That the key **values** match those in the **game** byte-for-byte. The round-trip uses the derived keys consistently in both directions, so any error in the `Derive` arithmetic or the key-per-opcode index **would cancel out** during the round-trip. This can only be verified with:
+  - (a) a **real PS5 capture** (1 session: capture the initializer + some ActionEffects and see if the resulting damage is coherent), or
+  - (b) building the **reference C# implementation** and comparing `Derive` outputs across a grid of seeds (requires the .NET SDK — not installed here).
 
-A correção dos valores se apoia, por ora, em: port linha-a-linha de
-aritmética inteira simples (com as máscaras de overflow/sinal equivalentes
-ao C#) — mas **a prova final é a captura real**.
+For now, the correctness of the values relies on a line-by-line port of simple integer arithmetic (with equivalent overflow/sign masks matching C#) — but **the final proof is a real capture**.
 
-## Adicionar um patch novo
+## Adding a New Patch
 
-1. Copie os 6 `.bin` de `Unscrambler/Data/<versão>/` para `data/<versão>/`.
-2. Transcreva o `Constants<versão>.cs` correspondente em `constants.py`
-   (radixes, max, modo, opcodes) e ajuste `LATEST`.
-3. Rode os testes.
+1. Copy the 6 `.bin` files from `Unscrambler/Data/<version>/` to `data/<version>/`.
+2. Transcribe the corresponding `Constants<version>.cs` into `constants.py` (radixes, max, mode, opcodes) and update `LATEST`.
+3. Run the tests.
 
-## Integração no Mitigus (quando/se for o caso)
+## Integration into Mitigus (when/if applicable)
 
-- O Mitigus já é relay TCP + decodifica Oodle + parseia bundles/segmentos IPC.
-- Para um leitor **read-only**: em cada segmento IPC, chame
-  `Deobfuscator.unscramble_copy(ipc_buf)` numa **cópia** e leia o combate;
-  **repasse o buffer original intacto** pro console (ele faz a própria
-  desofuscação — bytes desembaralhados quebrariam o cliente).
-- 1× por sessão: capture o pacote inicializador (opcode
-  `unknown_obfuscation_init_opcode`) e chame `feed_initializer`.
+- Mitigus is already a TCP relay + decodes Oodle + parses IPC bundles/segments.
+- For a **read-only** parser: on each IPC segment, call `Deobfuscator.unscramble_copy(ipc_buf)` on a **copy** and read combat data; **forward the original intact buffer** to the console (the console performs its own deobfuscation — forwarded scrambled bytes would crash the client).
+- Once per session: capture the initialization packet (opcode `unknown_obfuscation_init_opcode`) and call `feed_initializer`.
 
-## Pipeline de captura → replay (já pronto, branch `dps-meter`)
+## Capture → Replay Pipeline (already complete on the `dps-meter` branch)
 
-1. **Capturar** (no PC, com o console relayado): `python windows/run_capture.py`
-   — roda o proxy de produção (relay + Oodle + weave) e grava os segmentos IPC
-   **pristine pós-Oodle** num `.jsonl`. Costura `capture` opcional no Mitigator
-   (default-off; produção intacta) + `mitigus/capture/recorder.py`. Comece a
-   captura ANTES de trocar de zona (Oodle/ofuscação ligam na entrada da zona).
-2. **Validar** (offline): `python research/deob/replay_capture.py <captura.jsonl>`
-   — acha o inicializador, deriva as chaves da rede, desofusca os ActionEffect e
-   diz se `action_id`/dano saíram plausíveis. `test_replay.py` prova a cadeia
-   inteira (captura → chave → descramble → parse) com dados sintéticos: recupera
-   `action_id` e os valores de dano exatos.
+1. **Capture** (on the PC, with the console routing through it): `python windows/run_capture.py` — runs the production proxy (relay + Oodle + weave) and writes **pristine post-Oodle** IPC segments to a `.jsonl` file. Hooked via optional `capture` in the Mitigator (default-off; production intact) + `mitigus/capture/recorder.py`. Start capturing BEFORE changing zones (Oodle/obfuscation trigger upon zone entry).
+2. **Validate** (offline): `python research/deob/replay_capture.py <capture.jsonl>` — detects the initializer, derives network keys, deobfuscates ActionEffects, and verifies if `action_id`/damage values are plausible. `test_replay.py` validates the entire pipeline (capture → key → descramble → parse) using synthetic data: it recovers exact `action_id` and damage values.
 
-## Próximos passos
+## Next Steps
 
-1. **Rodar uma captura real do PS5** e passar pelo `replay_capture.py` — é o
-   único teste que falta pra cravar a validação byte-exata. Se a versão do jogo
-   ≠ 2026.06.10, copiar os `.bin` da versão certa e transcrever os constants.
-2. Depois de validado: parser de combate completo (dano→crit/direct hit→DPS por
-   job; job via PlayerSpawn) + UI "Neon Bars".
-3. Endurecer: limites de bounds nos writes (o upstream usa ponteiro cru, sem
-   checagem) e detectar a versão do jogo automaticamente.
+1. **Run a real PS5 capture** and pass it through `replay_capture.py` — this is the final validation needed to guarantee byte-accuracy. If the game version ≠ 2026.06.10, copy the correct `.bin` files and transcribe version constants.
+2. Once validated: build a complete combat parser (damage → crit/direct hit → DPS by job; job via `PlayerSpawn`) + "Neon Bars" UI.
+3. Harden: boundary checks on writes (the upstream uses raw pointers without checks) and auto-detect game versions.
