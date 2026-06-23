@@ -357,6 +357,23 @@ class DpsTrackerTest(unittest.TestCase):
         self.assertEqual(snap["total_damage"], 50)
         self.assertEqual(t.encounters, 2)
 
+    def test_base_rate_estimation(self):
+        from mitigus.meter.tracker import _base_rate, _DEFAULT_CRIT_RATE
+        self.assertEqual(_base_rate(10, 5, _DEFAULT_CRIT_RATE), _DEFAULT_CRIT_RATE)  # <20 -> default
+        self.assertAlmostEqual(_base_rate(100, 25, _DEFAULT_CRIT_RATE), 0.25)        # estima
+        self.assertEqual(_base_rate(100, 90, _DEFAULT_CRIT_RATE), 0.50)              # clamp máx
+        self.assertEqual(_base_rate(100, 0, _DEFAULT_CRIT_RATE), 0.05)               # clamp mín
+
+    def test_arcane_circle_buff_credit(self):
+        # Arcane Circle (RPR, status 2599, +3% AoE): nDPS remove o buff, o caster ganha rDPS.
+        t = DpsTracker()
+        RPR, ME = 0xBEE, 0x1006
+        t.update_actor_status(ME, [{"status_id": 2599, "stacks": 1, "duration": 20.0,
+                                    "caster_id": RPR}], 1000)
+        t.record_damage(ME, 10300, ts_ms=2000, target_id=0)
+        self.assertAlmostEqual(t._actors[ME].ndps_damage, 10000.0, places=2)  # +3% removido
+        self.assertAlmostEqual(t._actors[RPR].rdps_damage, 300.0, places=2)   # crédito do +3%
+
     def test_identity_survives_reset(self):
         # bug observado: trocar de luta apagava nome/job/level. Identidade persiste.
         t = DpsTracker(idle_reset_s=10.0)

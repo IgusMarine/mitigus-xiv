@@ -35,7 +35,8 @@ BUFFS = {
     2722: {"name": "Radiant Finale", "type": "mult", "value": 0.06},
     2964: {"name": "Radiant Finale", "type": "mult", "value": 0.06},
     3685: {"name": "Starry Muse", "type": "mult", "value": 0.05},
-    
+    2599: {"name": "Arcane Circle", "type": "mult", "value": 0.03},  # RPR (id de Status.csv)
+
     # Target Debuffs (AoE/Party)
     3183: {"name": "Mug", "type": "mult", "value": 0.05, "target": True},
     3849: {"name": "Dokumori", "type": "mult", "value": 0.05, "target": True},
@@ -65,10 +66,28 @@ BUFFS = {
     1825: {"name": "Devilment", "type": "crit_dh", "value": 0.20, "single": True},
 }
 
+# Constantes da buff-allocation (antes eram números mágicos no record_damage).
+CRIT_DMG_MULT = 1.50      # multiplicador de crit (APROX; real ~1.40-1.65 c/ gear)
+DH_DMG_MULT = 1.25        # direct hit é FIXO em 1.25 no FFXIV (exato)
+_DEFAULT_CRIT_RATE = 0.15
+_DEFAULT_DH_RATE = 0.10
+_MIN_RATE_SAMPLES = 20    # hits "limpos" (sem buff de crit/DH) p/ confiar na estimativa
+_RATE_MIN, _RATE_MAX = 0.05, 0.50   # clamp da taxa base estimada
+
+
+def _base_rate(hits, hot, default):
+    """Estima a taxa BASE de crit/DH do ator pelas amostras 'limpas' (hits sem
+    buff de crit/DH ativo). Cai no default até ter amostras suficientes; clampa
+    pra faixa sã. (Aproximação: abilities de auto-crit inflam um pouco a taxa.)"""
+    if hits >= _MIN_RATE_SAMPLES:
+        return min(_RATE_MAX, max(_RATE_MIN, hot / hits))
+    return default
+
 
 class _Actor:
     """Stats de UMA luta (zeram no reset)."""
-    __slots__ = ("id", "damage", "hits", "crit", "dh", "actions", "rdps_damage", "adps_damage", "ndps_damage")
+    __slots__ = ("id", "damage", "hits", "crit", "dh", "actions", "rdps_damage",
+                 "adps_damage", "ndps_damage", "cn_hits", "cn_crit", "dn_hits", "dn_dh")
 
     def __init__(self, actor_id):
         self.id = actor_id
@@ -80,6 +99,11 @@ class _Actor:
         self.rdps_damage = 0.0
         self.adps_damage = 0.0
         self.ndps_damage = 0.0
+        # amostras "limpas" (sem buff de crit/DH) p/ estimar a taxa base do ator
+        self.cn_hits = 0
+        self.cn_crit = 0
+        self.dn_hits = 0
+        self.dn_dh = 0
 
 
 class DpsTracker:
@@ -171,20 +195,27 @@ class DpsTracker:
                 self.encounters += 1
             self._last_ms = ts
 
+            a = self._actors.get(actor_id)
+            if a is None:
+                a = self._actors[actor_id] = _Actor(actor_id)
+            # taxa base de crit/DH estimada das amostras limpas deste ator
+            base_crit = _base_rate(a.cn_hits, a.cn_crit, _DEFAULT_CRIT_RATE)
+            base_dh = _base_rate(a.dn_hits, a.dn_dh, _DEFAULT_DH_RATE)
+
             # --- CÁLCULO DE rDPS, aDPS, nDPS ---
             mult_buffs, crit_buffs, dh_buffs = self._get_active_buffs(actor_id, target_id, ts)
             
             sub_crit = 0.0
             crit_credits = []
             if is_crit and crit_buffs:
-                base_val = value / (1.50 * 1.25) if is_direct else value / 1.50
+                base_val = value / (CRIT_DMG_MULT * DH_DMG_MULT) if is_direct else value / CRIT_DMG_MULT
                 g_total = value - base_val
                 g_crit = g_total * (2.0 / 3.0) if is_direct else g_total
                 sum_crit_val = sum(b["value"] for b, _ in crit_buffs)
-                p_crit_total = 0.15 + sum_crit_val
+                p_crit_total = base_crit + sum_crit_val
                 for bdef, caster_id in crit_buffs:
                     resolved_caster = self._resolve_caster(caster_id)
-                    if resolved_caster != actor_id and resolved_caster != 0 and resolved_caster != 0xE0000000:
+                    if resolved_caster != actor_id and resolved_caster not in (0, 0xE0000000, 0xFFFFFFFF):
                         b_val = bdef["value"]
                         gain = g_crit * (b_val / p_crit_total)
                         sub_crit += gain
@@ -193,14 +224,14 @@ class DpsTracker:
             sub_dh = 0.0
             dh_credits = []
             if is_direct and dh_buffs:
-                base_val = value / (1.50 * 1.25) if is_crit else value / 1.25
+                base_val = value / (CRIT_DMG_MULT * DH_DMG_MULT) if is_crit else value / DH_DMG_MULT
                 g_total = value - base_val
                 g_dh = g_total * (1.0 / 3.0) if is_crit else g_total
                 sum_dh_val = sum(b["value"] for b, _ in dh_buffs)
-                p_dh_total = 0.10 + sum_dh_val
+                p_dh_total = base_dh + sum_dh_val
                 for bdef, caster_id in dh_buffs:
                     resolved_caster = self._resolve_caster(caster_id)
-                    if resolved_caster != actor_id and resolved_caster != 0 and resolved_caster != 0xE0000000:
+                    if resolved_caster != actor_id and resolved_caster not in (0, 0xE0000000, 0xFFFFFFFF):
                         b_val = bdef["value"]
                         gain = g_dh * (b_val / p_dh_total)
                         sub_dh += gain
@@ -211,7 +242,7 @@ class DpsTracker:
             ext_mult_buffs = []
             for bdef, caster_id in mult_buffs:
                 resolved_caster = self._resolve_caster(caster_id)
-                if resolved_caster != actor_id and resolved_caster != 0 and resolved_caster != 0xE0000000:
+                if resolved_caster != actor_id and resolved_caster not in (0, 0xE0000000, 0xFFFFFFFF):
                     ext_mult_buffs.append((bdef, resolved_caster))
                     
             mult_credits = []
@@ -228,9 +259,6 @@ class DpsTracker:
             else:
                 neutral_val = net_val
                 
-            a = self._actors.get(actor_id)
-            if a is None:
-                a = self._actors[actor_id] = _Actor(actor_id)
             a.damage += value
             a.rdps_damage += neutral_val
             a.ndps_damage += neutral_val
@@ -259,6 +287,14 @@ class DpsTracker:
                 a.hits += 1
                 a.crit += int(is_crit)
                 a.dh += int(is_direct)
+                # amostra "limpa" p/ a taxa base: só conta quando NÃO há buff de
+                # crit/DH ativo neste hit (self ou externo).
+                if not crit_buffs:
+                    a.cn_hits += 1
+                    a.cn_crit += int(is_crit)
+                if not dh_buffs:
+                    a.dn_hits += 1
+                    a.dn_dh += int(is_direct)
             if action_id:
                 a.actions[action_id] = a.actions.get(action_id, 0) + value
 
