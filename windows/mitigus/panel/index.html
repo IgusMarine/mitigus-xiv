@@ -817,7 +817,10 @@ async function refresh(){
     /* reboot / aba com aviso */
     const needReboot=!!info.reboot_pending;
     $("rebootBanner").classList.toggle("show",needReboot);
-    const opcodesBad=info.opcodes_count>0 && s.flows>0 && info.opcodes_matched===false;
+    // opcodes ruins = sem definição p/ o servidor (no-match de IP) OU staleness
+    // detectada pelo watchdog (jogo enviando, nada reconhecido) — o match-por-IP
+    // sozinho deixava o painel verde mesmo com opcodes velhos pós-patch.
+    const opcodesBad=info.opcodes_count>0 && s.flows>0 && (info.opcodes_matched===false || info.opcodes_stale===true);
     $("opcodesBanner").classList.toggle("show",opcodesBad);
     const warnTab=needReboot||info.oodle_missing||opcodesBad;
     $("tabConfig").classList.toggle("warn",warnTab);

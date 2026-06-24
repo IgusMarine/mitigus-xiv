@@ -196,8 +196,10 @@ def _build_mitigation_factory(exe, opcodes_json, extra_delay, log, hub=None, cap
     from mitigus.mitigation.mitigator import Mitigator
     from mitigus.protocol.opcodes import load_definitions, match_for_server
 
+    import weakref
     print("  carregando definições de opcode...")
-    state = {"defs": load_definitions(json_path=opcodes_json)}
+    # "active": mitigators vivos (WeakSet) p/ recarregar opcodes em runtime no refresh.
+    state = {"defs": load_definitions(json_path=opcodes_json), "active": weakref.WeakSet()}
     module = None
     if exe:
         from mitigus.oodle.oodle import OodleModule
@@ -219,10 +221,21 @@ def _build_mitigation_factory(exe, opcodes_json, extra_delay, log, hub=None, cap
         except Exception as e:
             log(f"falha ao atualizar opcodes: {e}")
             return {"ok": False, "error": str(e)}
+        # aplica nas conexões vivas (pós-patch, sem precisar reconectar/re-zonar).
+        reloaded = 0
+        for m in list(state["active"]):
+            try:
+                opc = match_for_server(state["defs"], m._dest[0], m._dest[1])
+                if opc is not None:
+                    m.reload_opcodes(opc)
+                    reloaded += 1
+            except Exception:
+                pass
         _publish()
         date = _opcode_date(state["defs"])
-        log(f"opcodes atualizados ({len(state['defs'])} tabela(s), {date or '?'})")
-        return {"ok": True, "count": len(state["defs"]), "date": date}
+        log(f"opcodes atualizados ({len(state['defs'])} tabela(s), {date or '?'}; "
+            f"{reloaded} conexão(ões) recarregada(s))")
+        return {"ok": True, "count": len(state["defs"]), "date": date, "reloaded": reloaded}
 
     def factory(peer, dest):
         opc = match_for_server(state["defs"], dest[0], dest[1])
@@ -243,7 +256,10 @@ def _build_mitigation_factory(exe, opcodes_json, extra_delay, log, hub=None, cap
             from mitigus.oodle.oodle import OodleHelper
 
             oodle = OodleHelper(module)
-        return Mitigator(opc, oodle=oodle, extra_delay=extra_delay, on_log=log, hub=hub, capture=capture)
+        mit = Mitigator(opc, oodle=oodle, extra_delay=extra_delay, on_log=log, hub=hub, capture=capture)
+        mit._dest = dest                # p/ re-casar opcodes no refresh
+        state["active"].add(mit)
+        return mit
 
     return factory, refresh
 
@@ -337,6 +353,37 @@ def _run_full(ps5_ip, pc_ip, port, mitigate, exe, extra_delay, opcodes_json, pan
         import threading
 
         threading.Thread(target=refresh_opcodes, daemon=True, name="mitigus-opcodes").start()
+
+    # Watchdog de opcodes: detecta opcodes velhos pós-patch pelo RECONHECIMENTO real
+    # (jogo enviando, mas nada reconhecido como combate) e auto-atualiza + recarrega
+    # as conexões vivas — sem o usuário clicar em nada. Pega o patch no meio da sessão,
+    # que nem o refresh-no-boot nem o match-por-IP (painel verde enganoso) pegavam.
+    if refresh_opcodes and hub is not None:
+        import threading
+        import time as _time
+
+        def _opcode_watchdog():
+            WINDOW_S, MIN_INTERESTED, COOLDOWN_S = 60.0, 50, 120.0
+            last_refresh = 0.0
+            while True:
+                _time.sleep(WINDOW_S)
+                try:
+                    interested, recognized = hub.take_opcode_window()
+                except Exception:
+                    continue
+                stale = interested >= MIN_INTERESTED and recognized == 0
+                hub.set_info(opcodes_stale=stale)
+                now = _time.time()
+                if stale and (now - last_refresh) > COOLDOWN_S:
+                    last_refresh = now
+                    log("opcodes parecem desatualizados (jogo enviando, nada reconhecido) "
+                        "— atualizando sozinho...")
+                    try:
+                        refresh_opcodes()
+                    except Exception as e:
+                        log(f"watchdog: falha ao atualizar opcodes: {e}")
+
+        threading.Thread(target=_opcode_watchdog, daemon=True, name="mitigus-opcode-watchdog").start()
 
     panel_server = None
     if panel:

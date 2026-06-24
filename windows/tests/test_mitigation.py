@@ -193,5 +193,50 @@ class MitigationTest(unittest.TestCase):
         self.assertEqual(rest, full)  # completa e re-serializa
 
 
+_NEW_OPCODES = OpcodeDefinition.from_dict({
+    "Name": "novo", "C2S_ActionRequest": "0x0999", "C2S_ActionRequestGroundTargeted": "0x0998",
+    "S2C_ActionEffect01": "0x0501", "S2C_ActionEffect08": "0x0508", "S2C_ActionEffect16": "0x0516",
+    "S2C_ActionEffect24": "0x0524", "S2C_ActionEffect32": "0x0532", "S2C_ActorCast": "0x0601",
+    "S2C_ActorControl": "0x0602", "S2C_ActorControlSelf": "0x0603", "Common_UseOodleTcp": True,
+    "Server_IpRange": "", "Server_PortRange": "",
+})
+
+
+class OpcodeWatchdogTest(unittest.TestCase):
+    def _hub(self):
+        from mitigus.panel.hub import ControlHub
+        return ControlHub(clock=lambda: 0.0)
+
+    def test_recognized_combat_is_counted(self):
+        hub = self._hub()
+        m = Mitigator(OPCODES, oodle=None, clock=lambda: 0.0, hub=hub)
+        m.s2c(bundle([ipc_message(OPCODES.S2C_ActorCast, b"\x00" * 32)]))
+        self.assertEqual(hub.take_opcode_window(), (1, 1))   # interessada e reconhecida
+
+    def test_stale_opcodes_interested_but_unrecognized(self):
+        # opcodes velhos: 60 mensagens "interessantes" (0x0014) com subtype que não casa
+        hub = self._hub()
+        m = Mitigator(OPCODES, oodle=None, clock=lambda: 0.0, hub=hub)
+        m.s2c(bundle([ipc_message(0x09AB, b"\x00" * 32) for _ in range(60)]))
+        interested, recognized = hub.take_opcode_window()
+        self.assertEqual((interested, recognized), (60, 0))
+        self.assertTrue(interested >= 50 and recognized == 0)  # gatilho do watchdog
+
+    def test_take_opcode_window_resets(self):
+        hub = self._hub()
+        hub.note_opcodes(10, 3)
+        hub.note_opcodes(5, 0)
+        self.assertEqual(hub.take_opcode_window(), (15, 3))
+        self.assertEqual(hub.take_opcode_window(), (0, 0))     # janela zerou
+
+    def test_reload_opcodes_swaps_live(self):
+        m = Mitigator(OPCODES, oodle=None, clock=lambda: 0.0)
+        self.assertTrue(m.opcodes.is_action_effect(0x0201))    # opcode antigo casa
+        m.reload_opcodes(_NEW_OPCODES)
+        self.assertFalse(m.opcodes.is_action_effect(0x0201))   # antigo não casa mais
+        self.assertTrue(m.opcodes.is_action_effect(0x0501))    # novo casa
+        self.assertTrue(m._use_oodle_tcp)                      # flag atualizado junto
+
+
 if __name__ == "__main__":
     unittest.main()

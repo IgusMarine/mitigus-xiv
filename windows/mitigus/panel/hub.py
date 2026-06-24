@@ -48,6 +48,11 @@ class ControlHub:
         #   gpn    = deixa o GPN do PC (ExitLag/NoPing/Mudfish) cuidar da rota — o
         #            relay sai por socket normal e o GPN captura pelos IPs do servidor
         self._route = {"mode": "off", "host": "", "port": 1080}
+        # janela de reconhecimento de opcodes: tráfego de jogo "interessante"
+        # (interested) vs combate de fato reconhecido (recognized). interested alto
+        # + recognized==0 = opcodes velhos (pós-patch). O watchdog lê/zera e
+        # auto-atualiza. Detecta a staleness que o match-por-IP não pega.
+        self._opc = {"interested": 0, "recognized": 0}
 
     @staticmethod
     def _blank() -> dict:
@@ -120,6 +125,23 @@ class ControlHub:
     def note_flow(self) -> None:
         with self._lock:
             self._flows += 1
+
+    def note_opcodes(self, interested: int, recognized: int) -> None:
+        """Reporta, por bundle S2C, quantas mensagens de jogo chegaram vs quantas
+        foram reconhecidas como combate (ActionEffect/ActorControl/Cast)."""
+        with self._lock:
+            self._opc["interested"] += int(interested)
+            self._opc["recognized"] += int(recognized)
+
+    def take_opcode_window(self) -> tuple:
+        """Devolve (interested, recognized) acumulados e ZERA a janela. Cada janela
+        é avaliada isolada, então um patch no meio da sessão é detectado na janela
+        seguinte (recognized volta a 0 mesmo tendo sido > 0 antes)."""
+        with self._lock:
+            i, r = self._opc["interested"], self._opc["recognized"]
+            self._opc["interested"] = 0
+            self._opc["recognized"] = 0
+            return i, r
 
     # ---- configuração (ajustável pela UI) --------------------------------
     def extra_delay(self) -> float:

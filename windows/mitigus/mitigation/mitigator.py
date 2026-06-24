@@ -89,6 +89,10 @@ class Mitigator:
         self._log = on_log or (lambda m: None)
         self._hub = hub  # ControlHub opcional: liga/desliga em runtime + telemetria
         self._use_oodle_tcp = bool(opcodes.Common_UseOodleTcp)
+        # contadores p/ detecção de opcodes velhos (pós-patch): tráfego de jogo vs
+        # combate reconhecido neste S2C. Reportados ao hub ao fim de cada bundle.
+        self._opc_interested = 0
+        self._opc_recognized = 0
         # Modo de inspeção (run_tap.py): decodifica + detecta + loga o corte, mas NÃO
         # reserializa/reencoda (read-only). Produção deixa False.
         self.dry_run = False
@@ -239,6 +243,12 @@ class Mitigator:
             return bytearray(self.oodle.decode(ch, body, decoded_len))
         raise RuntimeError(f"compressão não suportada: {compression}")
 
+    def reload_opcodes(self, opcodes: OpcodeDefinition) -> None:
+        """Troca as definições de opcode em runtime (após o auto-update pós-patch),
+        sem precisar reconectar. Só lê o objeto, então é seguro entre threads."""
+        self.opcodes = opcodes
+        self._use_oodle_tcp = bool(opcodes.Common_UseOodleTcp)
+
     # ---- lógica de mitigação ---------------------------------------------
     def _to_upstream(self, bundle_header: XivBundleHeader, messages: List[_Message]) -> None:
         for mh, md in messages:
@@ -265,6 +275,8 @@ class Mitigator:
     def _to_downstream(self, bundle_header: XivBundleHeader, messages: List[_Message]) -> None:
         insertions: List[Tuple[int, _Message]] = []
         wait_time_dict: dict = {}
+        interested = 0   # mensagens de jogo "interessantes" (marcador 0x0014, estável)
+        recognized = 0   # quantas reconhecidas como combate (opcode casou)
         for i, (mh, md) in enumerate(messages):
             if mh.type != XivMessageType.Ipc or mh.source_actor != mh.target_actor or len(md) < IPC_HEADER_SIZE:
                 continue
@@ -278,14 +290,19 @@ class Mitigator:
                     wait_time_dict[owt.source_sequence] = owt.original_wait_time
                 if ipc.type != XivMessageIpcType.UnknownButInterested:
                     continue
+                interested += 1
 
                 if self.opcodes.is_action_effect(ipc.subtype):
+                    recognized += 1
                     self._handle_action_effect(i, mh, md, ipc, wait_time_dict, insertions)
                 elif ipc.subtype == self.opcodes.S2C_ActorControlSelf:
+                    recognized += 1
                     self._handle_rollback(md)
                 elif ipc.subtype == self.opcodes.S2C_ActorControl:
+                    recognized += 1
                     self._handle_cancel_cast(md)
                 elif ipc.subtype == self.opcodes.S2C_ActorCast:
+                    recognized += 1
                     if self.pending_actions:
                         self.pending_actions[0].is_cast = True
             except Exception:
@@ -293,6 +310,11 @@ class Mitigator:
 
         for i, entry in reversed(insertions):
             messages.insert(i, entry)
+
+        # sinal p/ o watchdog de opcodes: jogo enviando (interested) sem nada
+        # reconhecido (recognized) = opcodes velhos -> auto-update pós-patch.
+        if self._hub is not None and interested:
+            self._hub.note_opcodes(interested, recognized)
 
     def _handle_action_effect(self, index, mh, md, ipc, wait_time_dict, insertions) -> None:
         effect = XivMessageIpcActionEffect.from_buffer(md, IPC_HEADER_SIZE)
