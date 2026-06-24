@@ -50,6 +50,8 @@ hiddenimports = webview_hiddenimports + collect_submodules("pydivert") + collect
     "mitigus.meter.combat",
     "mitigus.meter.names",
     "mitigus.meter.spawn",
+    "mitigus.update",
+    "mitigus.update.updater",
 ]
 
 a = Analysis(
