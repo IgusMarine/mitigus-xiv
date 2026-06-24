@@ -268,6 +268,21 @@ def _run_full(ps5_ip, pc_ip, port, mitigate, exe, extra_delay, opcodes_json, pan
     logpath = _setup_logfile()
     if logpath:
         print(f"  log desta sessão: {logpath}  (envie este arquivo para análise)")
+
+    # Auto-update do APP: se ha um build novo no staging, aplica AGORA (um .bat
+    # copia por cima com o exe fechado e reabre) e sai. So age quando empacotado.
+    # No app unificado o relay roda como subprocesso "--child-proxy" -> o APPLY e
+    # feito pelo processo PRINCIPAL (mitigus_window); aqui so aplica quando ESTE e
+    # o principal (CLI e o exe standalone do meter).
+    if "--child-proxy" not in sys.argv:
+        try:
+            from mitigus.update import apply_pending_update
+            if apply_pending_update(lambda m: print(f"  [update] {m}")):
+                print("  Aplicando atualização do Mitigus e reabrindo...")
+                return 0
+        except Exception:
+            pass
+
     if not is_admin():
         print("! Modo real exige Administrador (WinDivert carrega driver de kernel).")
         return 2
@@ -384,6 +399,35 @@ def _run_full(ps5_ip, pc_ip, port, mitigate, exe, extra_delay, opcodes_json, pan
                         log(f"watchdog: falha ao atualizar opcodes: {e}")
 
         threading.Thread(target=_opcode_watchdog, daemon=True, name="mitigus-opcode-watchdog").start()
+
+    # Canal de update (DADOS + APP), best-effort, em segundo plano — nao bloqueia o
+    # relay. DADOS (deob/buffs/ui) baixados pro LOCALAPPDATA valem no proximo boot;
+    # se houver build novo, baixa pro staging e aplica no proximo boot tambem.
+    def _update_channel():
+        try:
+            from mitigus.update import (app_update_available, fetch_manifest,
+                                        stage_app_update, sync_data)
+            mani = fetch_manifest()
+        except Exception as e:
+            log(f"update: indisponivel ({e})")
+            return
+        try:
+            changed = sync_data(mani, log)
+            if changed:
+                log(f"update: dados novos ({', '.join(changed)}) — valem ao reabrir")
+                if hub is not None:
+                    hub.set_info(data_updated=changed)
+            if app_update_available(mani):
+                if hub is not None:
+                    hub.set_info(app_update=mani.get("app_version"), app_update_state="downloading")
+                ok = stage_app_update(mani, log)
+                if hub is not None:
+                    hub.set_info(app_update_state="ready" if ok else "error")
+        except Exception as e:
+            log(f"update: canal falhou ({e})")
+
+    import threading as _uth
+    _uth.Thread(target=_update_channel, daemon=True, name="mitigus-update").start()
 
     panel_server = None
     if panel:

@@ -1,0 +1,189 @@
+{
+  "1878": {
+    "name": "Divination",
+    "type": "mult",
+    "value": 0.06
+  },
+  "2034": {
+    "name": "Divination",
+    "type": "mult",
+    "value": 0.06
+  },
+  "1822": {
+    "name": "Technical Finish",
+    "type": "mult",
+    "value": 0.05
+  },
+  "2050": {
+    "name": "Technical Finish",
+    "type": "mult",
+    "value": 0.05
+  },
+  "1297": {
+    "name": "Embolden",
+    "type": "mult",
+    "value": 0.05
+  },
+  "1239": {
+    "name": "Embolden",
+    "type": "mult",
+    "value": 0.05
+  },
+  "2282": {
+    "name": "Embolden",
+    "type": "mult",
+    "value": 0.05
+  },
+  "1185": {
+    "name": "Brotherhood",
+    "type": "mult",
+    "value": 0.05
+  },
+  "2174": {
+    "name": "Brotherhood",
+    "type": "mult",
+    "value": 0.05
+  },
+  "2703": {
+    "name": "Searing Light",
+    "type": "mult",
+    "value": 0.03
+  },
+  "2722": {
+    "name": "Radiant Finale",
+    "type": "mult",
+    "value": 0.06
+  },
+  "2964": {
+    "name": "Radiant Finale",
+    "type": "mult",
+    "value": 0.06
+  },
+  "3685": {
+    "name": "Starry Muse",
+    "type": "mult",
+    "value": 0.05
+  },
+  "2599": {
+    "name": "Arcane Circle",
+    "type": "mult",
+    "value": 0.03
+  },
+  "3183": {
+    "name": "Mug",
+    "type": "mult",
+    "value": 0.05,
+    "target": true
+  },
+  "3849": {
+    "name": "Dokumori",
+    "type": "mult",
+    "value": 0.05,
+    "target": true
+  },
+  "4303": {
+    "name": "Dokumori",
+    "type": "mult",
+    "value": 0.05,
+    "target": true
+  },
+  "2105": {
+    "name": "Standard Finish",
+    "type": "mult",
+    "value": 0.05,
+    "single": true
+  },
+  "1821": {
+    "name": "Standard Finish",
+    "type": "mult",
+    "value": 0.05,
+    "single": true
+  },
+  "2024": {
+    "name": "Standard Finish",
+    "type": "mult",
+    "value": 0.05,
+    "single": true
+  },
+  "2113": {
+    "name": "Standard Finish",
+    "type": "mult",
+    "value": 0.05,
+    "single": true
+  },
+  "1882": {
+    "name": "The Balance",
+    "type": "mult",
+    "value": 0.06,
+    "single": true
+  },
+  "829": {
+    "name": "The Balance",
+    "type": "mult",
+    "value": 0.06,
+    "single": true
+  },
+  "1338": {
+    "name": "The Balance",
+    "type": "mult",
+    "value": 0.06,
+    "single": true
+  },
+  "3887": {
+    "name": "The Balance",
+    "type": "mult",
+    "value": 0.06,
+    "single": true
+  },
+  "1885": {
+    "name": "The Spear",
+    "type": "mult",
+    "value": 0.06,
+    "single": true
+  },
+  "832": {
+    "name": "The Spear",
+    "type": "mult",
+    "value": 0.06,
+    "single": true
+  },
+  "3889": {
+    "name": "The Spear",
+    "type": "mult",
+    "value": 0.06,
+    "single": true
+  },
+  "786": {
+    "name": "Battle Litany",
+    "type": "crit",
+    "value": 0.1
+  },
+  "1414": {
+    "name": "Battle Litany",
+    "type": "crit",
+    "value": 0.1
+  },
+  "1221": {
+    "name": "Chain Stratagem",
+    "type": "crit",
+    "value": 0.1,
+    "target": true
+  },
+  "1406": {
+    "name": "Chain Stratagem",
+    "type": "crit",
+    "value": 0.1,
+    "target": true
+  },
+  "141": {
+    "name": "Battle Voice",
+    "type": "dh",
+    "value": 0.2
+  },
+  "1825": {
+    "name": "Devilment",
+    "type": "crit_dh",
+    "value": 0.2,
+    "single": true
+  }
+}

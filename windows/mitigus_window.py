@@ -187,6 +187,16 @@ def main() -> int:
         _msgbox(i18n.t("dlg.need_admin"))
         return 2
 
+    # Auto-update: se ha um build novo baixado no boot anterior, aplica AGORA —
+    # antes de subir a janela e o subprocesso do proxy. Um .bat copia o build novo
+    # por cima (com tudo fechado) e reabre o app. So age quando empacotado.
+    try:
+        from mitigus.update import apply_pending_update
+        if apply_pending_update():
+            os._exit(0)
+    except Exception:
+        pass
+
     enable_routing()
     if reboot_should_prompt():
         mark_reboot_dismissed()

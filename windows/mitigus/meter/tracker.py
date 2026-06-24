@@ -66,6 +66,34 @@ BUFFS = {
     1825: {"name": "Devilment", "type": "crit_dh", "value": 0.20, "single": True},
 }
 
+
+def _apply_buffs_override():
+    """Permite ATUALIZAR a tabela de buffs sem rebuild: se o canal de update tiver
+    baixado um buffs.json pro %LOCALAPPDATA%\\Mitigus\\meter\\, ele substitui a BUFFS
+    acima (que continua sendo o baseline embutido). Formato:
+    {"<status_id>": {"name","type","value","single"?,"target"?}}."""
+    import json
+    import os
+    la = os.environ.get("LOCALAPPDATA")
+    if not la:
+        return
+    path = os.path.join(la, "Mitigus", "meter", "buffs.json")
+    try:
+        with open(path, encoding="utf-8") as f:
+            raw = json.load(f)
+        table = {int(k): v for k, v in raw.items()}
+        if table:
+            BUFFS.clear()
+            BUFFS.update(table)
+    except FileNotFoundError:
+        pass
+    except Exception:
+        pass  # override invalido -> mantem o baseline embutido
+
+
+_apply_buffs_override()
+
+
 # Constantes da buff-allocation (antes eram números mágicos no record_damage).
 CRIT_DMG_MULT = 1.50      # multiplicador de crit (APROX; real ~1.40-1.65 c/ gear)
 DH_DMG_MULT = 1.25        # direct hit é FIXO em 1.25 no FFXIV (exato)

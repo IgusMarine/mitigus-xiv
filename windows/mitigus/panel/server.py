@@ -42,7 +42,15 @@ class PanelServer:
         hub = self.hub
         on_update = self.on_update_opcodes
         tracker = self.tracker
-        with open(_INDEX_PATH, "rb") as fp:
+        # UI atualizavel sem rebuild: usa o index.html baixado pelo canal de update
+        # (%LOCALAPPDATA%\Mitigus\ui\) se existir; senao, o embutido.
+        idx = _INDEX_PATH
+        la = os.environ.get("LOCALAPPDATA")
+        if la:
+            ov = os.path.join(la, "Mitigus", "ui", "index.html")
+            if os.path.exists(ov):
+                idx = ov
+        with open(idx, "rb") as fp:
             index_html = fp.read()
 
         class Handler(http.server.BaseHTTPRequestHandler):
