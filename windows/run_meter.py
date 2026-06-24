@@ -43,8 +43,13 @@ def main() -> int:
     p.add_argument("--version", default=LATEST, help="versão do jogo p/ o deob")
     args = p.parse_args()
 
-    tracker = DpsTracker()
-    feed = MeterFeed(tracker, version=args.version)
+    try:
+        tracker = DpsTracker()
+        feed = MeterFeed(tracker, version=args.version)
+    except Exception as e:
+        print(f"! Não consegui iniciar o medidor (dados de desofuscação ausentes/"
+              f"corrompidos para {args.version}?): {e}")
+        return 2
     meter = MeterServer(tracker, port=args.meter_port)
     mport = meter.start()
     if open_firewall_port(mport):

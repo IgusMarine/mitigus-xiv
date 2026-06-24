@@ -203,12 +203,20 @@ def load_definitions(
     if os.path.exists(cache_path) and not force_update:
         age = time.time() - os.path.getmtime(cache_path)
         if age < ttl:
-            with open(cache_path, encoding="utf-8") as fp:
-                return _parse_all(json.load(fp))
+            try:
+                with open(cache_path, encoding="utf-8") as fp:
+                    return _parse_all(json.load(fp))
+            except (ValueError, OSError):
+                pass  # cache corrompido (write interrompido) -> re-baixa
 
     raw = download_definitions()
-    with open(cache_path, "w", encoding="utf-8") as fp:
-        json.dump(raw, fp)
+    try:  # grava atomico: .part + replace -> nunca deixa um cache pela metade
+        tmp = cache_path + ".part"
+        with open(tmp, "w", encoding="utf-8") as fp:
+            json.dump(raw, fp)
+        os.replace(tmp, cache_path)
+    except OSError:
+        pass  # sem cache em disco tudo bem; usamos o `raw` recem-baixado
     return _parse_all(raw)
 
 

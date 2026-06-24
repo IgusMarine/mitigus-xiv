@@ -94,6 +94,31 @@ class UpdateTest(unittest.TestCase):
         # fora do .exe (testes), apply nunca age
         self.assertFalse(updater.apply_pending_update())
 
+    def test_safe_extract_rejects_zip_slip(self):
+        import zipfile
+        zp = os.path.join(self.tmp, "evil.zip")
+        with zipfile.ZipFile(zp, "w") as z:
+            z.writestr("ok.txt", "hi")
+            z.writestr("../escape.txt", "evil")   # tenta escapar do destino
+        with zipfile.ZipFile(zp) as z:
+            with self.assertRaises(ValueError):
+                updater._safe_extract(z, os.path.join(self.tmp, "out"))
+
+    def test_sync_deob_skips_bundled_version(self):
+        called = {"n": 0}
+
+        def fake_get(url, timeout=30.0):
+            called["n"] += 1
+            return b"x"
+        updater._http_get = fake_get
+        # versao real ja embutida no build -> _sync_deob pula sem tocar a rede
+        m = {"deob_version": "2026.06.18.0000.0000",
+             "deob_constants_url": "http://x/versions.json",
+             "deob_base_url": "http://x/data/"}
+        changed = updater.sync_data(m)
+        self.assertNotIn("deob 2026.06.18.0000.0000", changed)
+        self.assertEqual(called["n"], 0)
+
     def test_buffs_override_from_localappdata(self):
         from mitigus.meter import tracker
         saved = dict(tracker.BUFFS)

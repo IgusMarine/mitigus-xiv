@@ -157,8 +157,12 @@ def main() -> int:
         from mitigus.meter.tracker import DpsTracker
         from mitigus.meter.live import MeterFeed
 
-        tracker = DpsTracker()
-        feed = MeterFeed(tracker)
+        try:
+            tracker = DpsTracker()
+            feed = MeterFeed(tracker)
+        except Exception as _e:
+            print(f"meter indisponível ({_e}); seguindo só com a mitigação")
+            tracker, feed = None, None
 
         try:
             run_proxy._run_full(
@@ -287,8 +291,12 @@ def main() -> int:
         from mitigus.meter.tracker import DpsTracker
         from mitigus.meter.live import MeterFeed
 
-        tracker = DpsTracker()
-        feed = MeterFeed(tracker)
+        try:
+            tracker = DpsTracker()
+            feed = MeterFeed(tracker)
+        except Exception as _e:
+            print(f"meter indisponível ({_e}); seguindo só com a mitigação")
+            tracker, feed = None, None
 
         ready: queue.Queue = queue.Queue()
 

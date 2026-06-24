@@ -175,13 +175,17 @@ def main() -> int:
         from mitigus.meter.tracker import DpsTracker
         from mitigus.net.adapters import open_firewall_port
 
-        tracker = DpsTracker()
-        sinks.append(MeterFeed(tracker, version=args.version))
-        meter_server = MeterServer(tracker, port=args.meter_port)
-        mport = meter_server.start()
-        if open_firewall_port(mport):
-            print(f"  firewall: porta {mport} liberada na rede local")
-        print(f"  >>> DPS METER ao vivo: http://127.0.0.1:{mport}  (abra no navegador) <<<")
+        try:
+            tracker = DpsTracker()
+            sinks.append(MeterFeed(tracker, version=args.version))
+        except Exception as e:
+            print(f"  meter indisponível ({e}); seguindo sem o --meter")
+        else:
+            meter_server = MeterServer(tracker, port=args.meter_port)
+            mport = meter_server.start()
+            if open_firewall_port(mport):
+                print(f"  firewall: porta {mport} liberada na rede local")
+            print(f"  >>> DPS METER ao vivo: http://127.0.0.1:{mport}  (abra no navegador) <<<")
 
     if len(sinks) == 1:
         capture = sinks[0]

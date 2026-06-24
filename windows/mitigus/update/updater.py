@@ -21,6 +21,7 @@ o que ja existe e segue. Nada aqui bloqueia o relay/weave.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import shutil
@@ -105,7 +106,7 @@ def sync_data(manifest: dict, log=lambda m: None) -> list:
     dv = manifest.get("deob_version")
     if dv:
         try:
-            if _sync_deob(manifest, dv, base, log) or state.get("deob_version") != dv:
+            if _sync_deob(manifest, dv, base, log):
                 changed.append(f"deob {dv}")
             state["deob_version"] = dv
         except Exception as e:
@@ -124,35 +125,50 @@ def sync_data(manifest: dict, log=lambda m: None) -> list:
 
 
 def _sync_deob(manifest, version, base, log) -> bool:
-    """versions.json (constantes) sempre; as 6 .bin so se ainda nao tiver.
-    Devolve True se baixou as .bin desta versao agora."""
-    deob = os.path.join(base, "deob")
-    os.makedirs(deob, exist_ok=True)
+    """Baixa as 6 .bin da `version` (atomico) e SO DEPOIS grava o versions.json —
+    assim o LATEST do loader nunca aponta pra uma versao sem tabelas (o que
+    crasharia o deob no boot). Pula se a versao ja e conhecida (embutida no build
+    ou ja sincronizada antes). Devolve True se baixou agora."""
+    try:
+        from ..deob.constants import VERSIONS as _known
+        if version in _known:
+            return False  # ja vem no build (ou ja sincronizada) -> nada a fazer
+    except Exception:
+        pass
+    baseurl = manifest.get("deob_base_url")
     vurl = manifest.get("deob_constants_url")
-    if vurl:
+    if not baseurl or not vurl:
+        return False
+    deob = os.path.join(base, "deob")
+    vdir = os.path.join(deob, "data", version)
+    downloaded = False
+    if not all(os.path.exists(os.path.join(vdir, b)) for b in _DEOB_BINS):
+        tmp = vdir + ".part"
+        if os.path.isdir(tmp):
+            shutil.rmtree(tmp, ignore_errors=True)
+        os.makedirs(tmp, exist_ok=True)
+        for b in _DEOB_BINS:
+            data = _http_get(f"{baseurl.rstrip('/')}/{version}/{b}")
+            with open(os.path.join(tmp, b), "wb") as f:
+                f.write(data)
+        if os.path.isdir(vdir):
+            shutil.rmtree(vdir, ignore_errors=True)
+        os.replace(tmp, vdir)  # promove so com TODAS as .bin no lugar
+        downloaded = True
+    # constantes (versions.json) SO depois das .bin -> nunca LATEST sem tabelas.
+    # Regrava so quando baixou .bin agora (ou se ainda nao existe) -> idempotente.
+    vjson = os.path.join(deob, "versions.json")
+    if downloaded or not os.path.exists(vjson):
         data = _http_get(vurl)
         json.loads(data.decode("utf-8"))  # valida antes de gravar
-        with open(os.path.join(deob, "versions.json"), "wb") as f:
+        os.makedirs(deob, exist_ok=True)
+        tmpv = vjson + ".part"
+        with open(tmpv, "wb") as f:
             f.write(data)
-
-    vdir = os.path.join(deob, "data", version)
-    if all(os.path.exists(os.path.join(vdir, b)) for b in _DEOB_BINS):
-        return False
-    baseurl = manifest.get("deob_base_url")
-    if not baseurl:
-        return False
-    tmp = vdir + ".part"
-    os.makedirs(tmp, exist_ok=True)
-    for b in _DEOB_BINS:
-        data = _http_get(f"{baseurl.rstrip('/')}/{version}/{b}")
-        with open(os.path.join(tmp, b), "wb") as f:
-            f.write(data)
-    # so promove quando TODAS baixaram (evita versao meia-baixada)
-    if os.path.isdir(vdir):
-        shutil.rmtree(vdir, ignore_errors=True)
-    os.replace(tmp, vdir)
-    log(f"update: tabelas deob {version} baixadas")
-    return True
+        os.replace(tmpv, vjson)
+    if downloaded:
+        log(f"update: deob {version} sincronizada")
+    return downloaded
 
 
 def _sync_rev_file(manifest, key, url, dest, state, log) -> bool:
@@ -196,24 +212,53 @@ def stage_app_update(manifest: dict, log=lambda m: None) -> bool:
         zpath = os.path.join(up, "app.zip")
         staged = os.path.join(up, "staged")
         data = _http_get(url, timeout=600)
+        want = manifest.get("app_zip_sha256")
+        if want:
+            got = hashlib.sha256(data).hexdigest()
+            if got.lower() != str(want).lower():
+                log(f"update: hash do build nao confere (esp {str(want)[:12]}…, "
+                    f"veio {got[:12]}…) — abortado")
+                return False
         with open(zpath, "wb") as f:
             f.write(data)
         if os.path.isdir(staged):
             shutil.rmtree(staged, ignore_errors=True)
         with zipfile.ZipFile(zpath) as z:
-            z.extractall(staged)
+            _safe_extract(z, staged)   # guarda anti zip-slip
         os.remove(zpath)
         appfolder = _find_app_folder(staged)
-        if not appfolder:
+        exe = _find_exe_name(appfolder) if appfolder else None
+        if not appfolder or not exe:
             log("update: zip do build sem a pasta do app (com .exe)")
             return False
         with open(os.path.join(up, "ready.json"), "w", encoding="utf-8") as f:
-            json.dump({"version": ver, "app_folder": appfolder, "target": app_dir()}, f)
+            json.dump({"version": ver, "app_folder": appfolder,
+                       "target": app_dir(), "exe": exe}, f)
         log(f"update: build {ver} baixado, sera aplicado no proximo boot")
         return True
     except Exception as e:
         log(f"update: download do build falhou: {e}")
         return False
+
+
+def _safe_extract(z: zipfile.ZipFile, dest: str) -> None:
+    """extractall com guarda contra zip-slip (entrada que escaparia de `dest`)."""
+    dest_abs = os.path.abspath(dest)
+    for member in z.namelist():
+        target = os.path.abspath(os.path.join(dest, member))
+        if target != dest_abs and not target.startswith(dest_abs + os.sep):
+            raise ValueError(f"entrada de zip suspeita (zip-slip): {member}")
+    z.extractall(dest)
+
+
+def _find_exe_name(appfolder: str):
+    try:
+        for f in os.listdir(appfolder):
+            if f.lower().endswith(".exe"):
+                return f
+    except OSError:
+        pass
+    return None
 
 
 def _find_app_folder(staged: str):
@@ -250,16 +295,24 @@ def apply_pending_update(log=lambda m: None) -> bool:
         ver = info.get("version")
         src = info.get("app_folder")
         target = info.get("target") or app_dir()
-        exe_name = os.path.basename(sys.executable)
+        exe_name = info.get("exe") or os.path.basename(sys.executable)
         # ja estamos na versao nova (swap ja aconteceu) -> limpa e segue
         if not ver or _vtuple(ver) <= _vtuple(__version__):
             os.remove(ready)
             return False
-        if not (src and os.path.isdir(src) and os.path.exists(os.path.join(src, exe_name))):
+        # seguranca: o staging TEM que estar dentro do nosso update dir — um
+        # ready.json adulterado nao pode fazer o robocopy copiar de outro lugar.
+        up_abs = os.path.abspath(_update_dir())
+        src_abs = os.path.abspath(src) if src else ""
+        if not (src_abs == up_abs or src_abs.startswith(up_abs + os.sep)):
+            log("update: app_folder fora do update dir; ignorando")
+            os.remove(ready)
+            return False
+        if not (os.path.isdir(src_abs) and os.path.exists(os.path.join(src_abs, exe_name))):
             log("update: staging invalido; ignorando")
             os.remove(ready)
             return False
-        _spawn_swap(src, target, exe_name, log)
+        _spawn_swap(src_abs, target, exe_name, log)
         return True
     except Exception as e:
         log(f"update: apply falhou: {e}")
@@ -270,18 +323,29 @@ def _spawn_swap(src: str, target: str, exe_name: str, log) -> None:
     """Escreve e dispara o .bat que: espera este processo fechar, copia o build
     novo por cima (sem apagar vendor/definitions), reabre o app e se autoexclui."""
     pid = os.getpid()
+    main_exe = os.path.basename(sys.executable)
     up = _update_dir()
     bat = os.path.join(up, "apply.bat")
     exe_path = os.path.join(target, exe_name)
+    ffxiv = os.path.join(target, "ffxiv_dx11.exe")
     lines = [
         "@echo off",
         "setlocal",
+        "set /a tries=0",
         ":wait",
-        f'tasklist /FI "PID eq {pid}" 2>nul | find "{pid}" >nul && '
-        f'(ping -n 2 127.0.0.1 >nul & goto wait)',
-        # /E copia subpastas (inclui _internal); SEM /MIR -> nao apaga vendor/definitions
+        # segue p/ o swap quando o PRINCIPAL sumir (confere PID *e* nome, robusto a
+        # PID reciclado); teto de ~120 tentativas (~6 min) p/ nunca travar p/ sempre.
+        f'tasklist /FI "PID eq {pid}" /FI "IMAGENAME eq {main_exe}" 2>nul '
+        f'| find /I "{main_exe}" >nul || goto doswap',
+        "set /a tries+=1",
+        "if %tries% geq 120 goto doswap",
+        "ping -n 3 127.0.0.1 >nul",
+        "goto wait",
+        ":doswap",
+        # /E copia subpastas (inclui _internal); SEM /MIR -> preserva vendor/definitions
         f'robocopy "{src}" "{target}" /E /R:3 /W:2 /NFL /NDL /NJH /NJS /NP >nul',
-        f'start "" "{exe_path}"',
+        f'del "{ffxiv}" 2>nul',  # hardlink antigo do GPN -> recriado no proximo boot
+        f'if exist "{exe_path}" start "" "{exe_path}"',
         f'rmdir /S /Q "{os.path.join(up, "staged")}" 2>nul',
         f'del "{os.path.join(up, "ready.json")}" 2>nul',
         'del "%~f0"',
