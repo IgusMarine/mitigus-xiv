@@ -75,12 +75,50 @@ _V_2026_06_10 = VersionConstants(
 )
 
 
+# --- 2026.06.18.0000.0000 (patch 7.51h2) -- Constants751h2.cs -------------
+# Transcrito de perchbirdd/Unscrambler (Constants751h2.cs) + .bin de Data/2026.06.18.
+# Patch 7.51h2 (2026-06-23) reembaralhou TODOS os opcodes (cross-conferido com o
+# XivAlexander: ActionEffect01=0x37D, ActorControl=0x19F, ActorCast=0x1C9).
+_V_2026_06_18 = VersionConstants(
+    game_version="2026.06.18.0000.0000",
+    obfuscation_enabled_mode=72,
+    table_radixes=(119, 119, 104),
+    table_max=(86, 72, 152),
+    init_zone_opcode=0x337,
+    unknown_obfuscation_init_opcode=0xD7,
+    keygen_gen="74",
+    unscramble_gen="73",
+    obfuscated_opcodes={
+        "PlayerSpawn": 0x2E0,
+        "NpcSpawn": 0x378,
+        "NpcSpawn2": 0x188,
+        "ActionEffect01": 0x37D,
+        "ActionEffect08": 0x350,
+        "ActionEffect16": 0x27E,
+        "ActionEffect24": 0x1A4,
+        "ActionEffect32": 0x2A2,
+        "StatusEffectList": 0x132,
+        "StatusEffectList3": 0x28B,
+        "Examine": 0x32C,
+        "UpdateGearset": 0x333,
+        "UpdateParty": 0x3DC,
+        "ActorControl": 0x19F,
+        "ActorCast": 0x1C9,
+        "UnknownEffect01": 0x144,
+        "UnknownEffect16": 0x346,
+        "ActionEffect02": 0x1DA,
+        "ActionEffect04": 0x2B8,
+    },
+)
+
+
 VERSIONS: dict[str, VersionConstants] = {
     _V_2026_06_10.game_version: _V_2026_06_10,
+    _V_2026_06_18.game_version: _V_2026_06_18,
 }
 
 # Versao "mais nova" que conhecemos (default pratico).
-LATEST = _V_2026_06_10.game_version
+LATEST = _V_2026_06_18.game_version
 
 
 def _version_key(v: str):
