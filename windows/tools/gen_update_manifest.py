@@ -43,7 +43,7 @@ def _write(path: str, data: bytes) -> bytes:
     return data
 
 
-def main() -> int:
+def main(zip_path: str | None = None) -> int:
     # versions.json (constantes deob, no formato que o loader dinamico le)
     versions = []
     for v in VERSIONS.values():
@@ -82,6 +82,12 @@ def main() -> int:
         "ui_url": f"{_RAW}/mitigus/panel/index.html",
         "ui_rev": _short_hash(ui_bytes),
     }
+    # se o zip do build for informado, publica o sha256 — o app VERIFICA antes de
+    # aplicar (protege contra download corrompido/trocado).
+    if zip_path:
+        with open(zip_path, "rb") as f:
+            manifest["app_zip_sha256"] = hashlib.sha256(f.read()).hexdigest()
+        print(f"  sha256 do zip: {manifest['app_zip_sha256'][:16]}…")
     _write(os.path.join(_OUT, "manifest.json"),
            json.dumps(manifest, indent=2).encode("utf-8"))
 
@@ -93,4 +99,8 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    import argparse
+    _p = argparse.ArgumentParser(description="Gera os artefatos do canal de update")
+    _p.add_argument("--zip", dest="zip_path",
+                    help="zip do build publicado no Release (grava o sha256 no manifest)")
+    raise SystemExit(main(_p.parse_args().zip_path))

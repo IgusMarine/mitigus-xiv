@@ -1,11 +1,12 @@
 {
-  "app_version": "0.0.1",
-  "app_zip_url": "https://github.com/IgusMarine/mitigus-xiv/releases/download/v0.0.1/Mitigus-XIV-App.zip",
+  "app_version": "0.4.0",
+  "app_zip_url": "https://github.com/IgusMarine/mitigus-xiv/releases/download/v0.4.0/Mitigus-XIV-App.zip",
   "deob_version": "2026.07.16.0001.0000",
   "deob_constants_url": "https://raw.githubusercontent.com/IgusMarine/mitigus-xiv/dps-meter/windows/update/versions.json",
   "deob_base_url": "https://raw.githubusercontent.com/IgusMarine/mitigus-xiv/dps-meter/windows/mitigus/deob/data/",
   "buffs_url": "https://raw.githubusercontent.com/IgusMarine/mitigus-xiv/dps-meter/windows/update/buffs.json",
   "buffs_rev": "b3e80caf5f3b",
   "ui_url": "https://raw.githubusercontent.com/IgusMarine/mitigus-xiv/dps-meter/windows/mitigus/panel/index.html",
-  "ui_rev": "299280e7b7ea"
+  "ui_rev": "d0c8489bc00d",
+  "app_zip_sha256": "5a496c19abb0062f383e072fed7aa19d36265e4f37a6aa9f5a8fb04336a54ee1"
 }

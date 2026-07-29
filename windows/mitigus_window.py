@@ -147,6 +147,14 @@ def run_window(url: str) -> int:
 
 
 def main() -> int:
+    # `--version`: imprime a versão DESTE build e sai. Serve pra suporte ("qual
+    # versão você tem?") e pra conferir que o auto-update embutiu a versão certa
+    # (se ela não subir junto com o build, o self-updater re-baixaria em loop).
+    if "--version" in sys.argv:
+        from mitigus import __version__
+        print(__version__)
+        return 0
+
     # idioma salvo (ou o do Windows no 1º uso) — pra bandeja/diálogos saírem certos
     # antes do painel abrir e mandar /api/lang.
     i18n.load_lang()

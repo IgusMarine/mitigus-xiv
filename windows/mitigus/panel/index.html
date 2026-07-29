@@ -590,7 +590,7 @@ const MSG={
   "opc.help":"<b>Only use this if the game updated and Mitigus hasn't.</b> It normally updates itself. If the community publishes the opcodes first, paste the file contents here (the XivAlexander <b>.json</b> or the Unscrambler <b>Constants&lt;patch&gt;.cs</b>) and click apply.",
   "opc.ph":"paste the opcode file contents here…","opc.apply":"apply opcodes","opc.revert":"back to automatic",
   "opc.folder":"It also works by <b>dragging the file</b> into the <b>opcodes</b> folder (inside the Mitigus folder) and reopening the app.",
-  "opc.empty":"Nothing to apply — paste the file contents first.","opc.reverted":"Back to the automatic source.",
+  "opc.empty":"Nothing to apply — paste the file contents first.","opc.reverted":"Back to the automatic source.","opc.needApp":"This Mitigus version does not support applying opcodes by hand yet — it will after the app updates itself (or ask Igor for the new build).",
   "status.mitigating":"Mitigating","status.paused":"Paused","status.serverLabel":"Server:",
   "game.waiting0":"waiting","game.active":"Game active","game.idle":"game idle","game.waiting":"waiting for game",
   "hero.label":"Animation lock · last cut","hero.chip":"−{n} ms per action",
@@ -647,7 +647,7 @@ const MSG={
   "opc.help":"<b>Só use se o jogo atualizou e o Mitigus ainda não.</b> Normalmente ele se atualiza sozinho. Se a comunidade publicar os opcodes antes, cole aqui o conteúdo do arquivo (o <b>.json</b> do XivAlexander ou o <b>Constants&lt;patch&gt;.cs</b> do Unscrambler) e clique em aplicar.",
   "opc.ph":"cole aqui o conteúdo do arquivo de opcodes…","opc.apply":"aplicar opcodes","opc.revert":"voltar ao automático",
   "opc.folder":"Também funciona <b>arrastando o arquivo</b> para a pasta <b>opcodes</b> (dentro da pasta do Mitigus) e reabrindo o app.",
-  "opc.empty":"Nada para aplicar — cole o conteúdo do arquivo primeiro.","opc.reverted":"Voltou para a fonte automática.",
+  "opc.empty":"Nada para aplicar — cole o conteúdo do arquivo primeiro.","opc.reverted":"Voltou para a fonte automática.","opc.needApp":"Esta versão do Mitigus ainda não aceita aplicar opcodes na mão — vai aceitar depois que o app se atualizar (ou peça o build novo pro Igor).",
   "status.mitigating":"Mitigando","status.paused":"Pausado","status.serverLabel":"Servidor:",
   "game.waiting0":"aguardando","game.active":"Jogo ativo","game.idle":"jogo ocioso","game.waiting":"aguardando jogo",
   "hero.label":"Trava de animação · último corte","hero.chip":"−{n} ms por ação",
@@ -704,7 +704,7 @@ const MSG={
   "opc.help":"<b>Úsalo solo si el juego se actualizó y Mitigus todavía no.</b> Normalmente se actualiza solo. Si la comunidad publica los opcodes antes, pega aquí el contenido del archivo (el <b>.json</b> de XivAlexander o el <b>Constants&lt;patch&gt;.cs</b> de Unscrambler) y pulsa aplicar.",
   "opc.ph":"pega aquí el contenido del archivo de opcodes…","opc.apply":"aplicar opcodes","opc.revert":"volver al automático",
   "opc.folder":"También funciona <b>arrastrando el archivo</b> a la carpeta <b>opcodes</b> (dentro de la carpeta de Mitigus) y reabriendo la app.",
-  "opc.empty":"Nada que aplicar — pega primero el contenido del archivo.","opc.reverted":"Volvió a la fuente automática.",
+  "opc.empty":"Nada que aplicar — pega primero el contenido del archivo.","opc.reverted":"Volvió a la fuente automática.","opc.needApp":"Esta versión de Mitigus todavía no acepta aplicar opcodes a mano — lo hará cuando la app se actualice (o pide la compilación nueva a Igor).",
   "status.mitigating":"Mitigando","status.paused":"Pausado","status.serverLabel":"Servidor:",
   "game.waiting0":"esperando","game.active":"Juego activo","game.idle":"juego inactivo","game.waiting":"esperando el juego",
   "hero.label":"Bloqueo de animación · último recorte","hero.chip":"−{n} ms por acción",
@@ -814,7 +814,12 @@ async function updateOpcodesBanner(e){const b=e.currentTarget;b.textContent="…
   b.textContent=ok?"✓":tr("btn.error");setTimeout(()=>{b.textContent=tr("opcodes.btn");b.disabled=false;refresh()},1300)}
 async function postManualOpcodes(body){                            /* texto cru; "auto" = voltar */
   try{const r=await fetch("/api/opcodes/manual",{method:"POST",headers:{"Content-Type":"text/plain"},body:body});
-    return await r.json()}catch(e){return {ok:false,error:String(e)}}}
+    /* a UI chega pelo canal de update antes do app novo: se esta versão do app
+       ainda não tem o endpoint, avisa em vez de mostrar "not found" cru. */
+    if(r.status===404)return {ok:false,detail:tr("opc.needApp")};
+    const d=await r.json();
+    if(d&&d.ok===undefined&&d.error==="not found")return {ok:false,detail:tr("opc.needApp")};
+    return d}catch(e){return {ok:false,error:String(e)}}}
 function showOpcResult(res){const box=$("opcResult");
   box.style.display="block";
   box.innerHTML=(res.ok?"<b>✓</b> ":"<b>✗</b> ")+(res.detail||res.error||"");
