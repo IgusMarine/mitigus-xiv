@@ -112,13 +112,48 @@ _V_2026_06_18 = VersionConstants(
 )
 
 
+# --- 2026.07.16.0001.0000 -- 7.5/Constants755.cs (via tools/sync_deob_upstream.py)
+_V_2026_07_16_0001_0000 = VersionConstants(
+    game_version="2026.07.16.0001.0000",
+    obfuscation_enabled_mode=24,
+    table_radixes=(88, 120, 131),
+    table_max=(75, 41, 117),
+    init_zone_opcode=0x2D9,
+    unknown_obfuscation_init_opcode=0x3DE,
+    keygen_gen="74",
+    unscramble_gen="73",
+    obfuscated_opcodes={
+        "PlayerSpawn": 0x71,
+        "NpcSpawn": 0x80,
+        "NpcSpawn2": 0x146,
+        "ActionEffect01": 0x1F3,
+        "ActionEffect08": 0x114,
+        "ActionEffect16": 0x2CD,
+        "ActionEffect24": 0xED,
+        "ActionEffect32": 0x2C7,
+        "StatusEffectList": 0x14C,
+        "StatusEffectList3": 0x2E8,
+        "Examine": 0x288,
+        "UpdateGearset": 0x308,
+        "UpdateParty": 0x17F,
+        "ActorControl": 0x112,
+        "ActorCast": 0x16B,
+        "UnknownEffect01": 0xDB,
+        "UnknownEffect16": 0x255,
+        "ActionEffect02": 0x355,
+        "ActionEffect04": 0x1E5,
+    },
+)
+
+
 VERSIONS: dict[str, VersionConstants] = {
+    _V_2026_07_16_0001_0000.game_version: _V_2026_07_16_0001_0000,
     _V_2026_06_10.game_version: _V_2026_06_10,
     _V_2026_06_18.game_version: _V_2026_06_18,
 }
 
 # Versao "mais nova" que conhecemos (default pratico).
-LATEST = _V_2026_06_18.game_version
+LATEST = _V_2026_07_16_0001_0000.game_version
 
 
 def _version_key(v: str):

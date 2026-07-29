@@ -1,5 +1,44 @@
 [
   {
+    "game_version": "2026.07.16.0001.0000",
+    "obfuscation_enabled_mode": 24,
+    "table_radixes": [
+      88,
+      120,
+      131
+    ],
+    "table_max": [
+      75,
+      41,
+      117
+    ],
+    "init_zone_opcode": 729,
+    "unknown_obfuscation_init_opcode": 990,
+    "obfuscated_opcodes": {
+      "PlayerSpawn": 113,
+      "NpcSpawn": 128,
+      "NpcSpawn2": 326,
+      "ActionEffect01": 499,
+      "ActionEffect08": 276,
+      "ActionEffect16": 717,
+      "ActionEffect24": 237,
+      "ActionEffect32": 711,
+      "StatusEffectList": 332,
+      "StatusEffectList3": 744,
+      "Examine": 648,
+      "UpdateGearset": 776,
+      "UpdateParty": 383,
+      "ActorControl": 274,
+      "ActorCast": 363,
+      "UnknownEffect01": 219,
+      "UnknownEffect16": 597,
+      "ActionEffect02": 853,
+      "ActionEffect04": 485
+    },
+    "keygen_gen": "74",
+    "unscramble_gen": "73"
+  },
+  {
     "game_version": "2026.06.10.0000.0000",
     "obfuscation_enabled_mode": 240,
     "table_radixes": [
