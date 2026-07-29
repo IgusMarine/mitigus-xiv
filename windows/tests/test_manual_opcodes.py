@@ -105,6 +105,63 @@ class ManualOpcodesTest(unittest.TestCase):
         self.assertFalse(res["ok"])
         self.assertFalse(os.path.exists(manual.manual_weave_path()))
 
+    # ---- o formato que a comunidade realmente compartilha --------------
+    # Só os 10 opcodes, SEM Common_UseOodleTcp / Server_IpRange / PortRange
+    # (é o recorte que circula em posts/issues). Caso de uso central: não regredir.
+    _COMUNIDADE = """{
+      "C2S_ActionRequest": "0x03c0",
+      "C2S_ActionRequestGroundTargeted": "0x01c7",
+      "S2C_ActionEffect01": "0x01f3",
+      "S2C_ActionEffect08": "0x0114",
+      "S2C_ActionEffect16": "0x02cd",
+      "S2C_ActionEffect24": "0x00ed",
+      "S2C_ActionEffect32": "0x02c7",
+      "S2C_ActorCast": "0x016b",
+      "S2C_ActorControl": "0x0112",
+      "S2C_ActorControlSelf": "0x020e"
+    }"""
+
+    def test_community_minimal_json_is_accepted_and_usable(self):
+        res = manual.apply_manual(self._COMUNIDADE)
+        self.assertTrue(res["ok"], res)
+        self.assertEqual(res["kind"], "weave")
+        self.assertFalse(res["restart"])             # weave vale na hora
+
+        from mitigus.protocol.opcodes import load_definitions, match_for_server
+        defs = load_definitions(json_path=manual.manual_weave_path())
+        self.assertEqual(len(defs), 1)
+        self.assertEqual(defs[0].S2C_ActionEffect01, 0x01F3)
+        self.assertEqual(defs[0].S2C_ActorControlSelf, 0x020E)
+        self.assertTrue(defs[0].Common_UseOodleTcp)  # default correto p/ Dawntrail
+
+        # sem Server_IpRange, casa com QUALQUER servidor (bom: sobrevive a troca
+        # de faixa de IP dos data centers)
+        opc = match_for_server(defs, "204.2.29.35", 55021)
+        self.assertIsNotNone(opc)
+        self.assertTrue(opc.is_action_effect(0x01F3))
+        self.assertFalse(opc.is_action_effect(0x037D))   # o do patch anterior não
+        self.assertEqual(opc.opcode_name(0x0112), "S2C_ActorControl")
+
+        # e o Mitigator (weave) aceita + troca ao vivo
+        from mitigus.mitigation.mitigator import Mitigator
+        mit = Mitigator(opc, oodle=None, clock=lambda: 0.0)
+        mit.reload_opcodes(opc)
+        self.assertTrue(mit.opcodes.is_action_effect(0x01F3))
+
+    def test_community_full_xivalexander_file_also_works(self):
+        # o arquivo completo do repo (com IpRange/PortRange/PatchCode) tambem entra,
+        # e ai o filtro por IP passa a valer
+        full = json.loads(self._COMUNIDADE)
+        full.update({"Common_UseOodleTcp": True,
+                     "Server_IpRange": "204.2.29.0/24, 80.239.145.0/24",
+                     "Server_PortRange": "1024-65535",
+                     "PatchCode": [{"Name": "x", "x64": [], "x86": []}]})
+        self.assertTrue(manual.apply_manual(json.dumps(full))["ok"])
+        from mitigus.protocol.opcodes import load_definitions, match_for_server
+        defs = load_definitions(json_path=manual.manual_weave_path())
+        self.assertIsNotNone(match_for_server(defs, "204.2.29.35", 55021))
+        self.assertIsNone(match_for_server(defs, "1.2.3.4", 55021))
+
     # ---- deob ---------------------------------------------------------
     def test_apply_deob_from_cs(self):
         calls = []
