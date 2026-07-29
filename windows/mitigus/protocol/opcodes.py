@@ -197,7 +197,11 @@ def load_definitions(
     """
     if json_path:
         with open(json_path, encoding="utf-8") as fp:
-            return _parse_all([{"Name": os.path.basename(json_path), **json.load(fp)}])
+            data = json.load(fp)
+        # aceita um objeto unico OU uma lista (o arquivo manual guarda lista)
+        if isinstance(data, list):
+            return _parse_all([{"Name": os.path.basename(json_path), **d} for d in data])
+        return _parse_all([{"Name": os.path.basename(json_path), **data}])
 
     cache_path = cache_path or default_cache_path()
     if os.path.exists(cache_path) and not force_update:

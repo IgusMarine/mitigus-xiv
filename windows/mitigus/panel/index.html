@@ -286,6 +286,13 @@
   .note{font-size:11px;color:var(--faint);text-align:center;margin-top:16px;line-height:1.6}
   .note b{color:var(--warn)}
 
+  /* ── opcodes manuais (avançado) ── */
+  .opc-ta{width:100%;box-sizing:border-box;min-height:110px;margin:8px 0;padding:9px 11px;
+    background:var(--surface);color:var(--txt);border:1px solid var(--line-soft);border-radius:9px;
+    font-family:ui-monospace,Consolas,monospace;font-size:11.5px;line-height:1.45;resize:vertical}
+  .opc-ta:focus{outline:none;border-color:var(--cyan-dim)}
+  .opc-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
   /* ── DPS METER (Isolado) ── */
   #meter .tabs{display:flex;gap:6px;padding:2px 16px 10px}
   #meter .tab-btn{flex:1;background:var(--surface);color:var(--muted);border:1px solid var(--line-soft);
@@ -497,6 +504,20 @@
         </div>
       </div>
 
+      <div class="accord" id="accOpcodes">
+        <div class="accord-h" onclick="acc('accOpcodes')"><svg class="i lead" viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h7"/><path d="m17 14 3 3-3 3"/></svg><b data-i18n="opc.title">Opcodes do jogo (avançado)</b><span class="pill" id="opcPill" data-i18n="opc.auto">automático</span><svg class="i chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></div>
+        <div class="accord-b">
+          <div class="warnbox" data-i18n-html="opc.help"><b>Só use se o jogo atualizou e o Mitigus ainda não.</b> Normalmente ele se atualiza sozinho. Se a comunidade publicar os opcodes antes, cole aqui o conteúdo do arquivo (o <b>.json</b> do XivAlexander ou o <b>Constants&lt;patch&gt;.cs</b> do Unscrambler) e clique em aplicar.</div>
+          <textarea id="opcManual" class="opc-ta" spellcheck="false" data-i18n-ph="opc.ph" placeholder="cole aqui o conteúdo do arquivo de opcodes…"></textarea>
+          <div class="opc-row">
+            <button class="btn-primary" onclick="applyManualOpcodes(event)"><svg class="i" viewBox="0 0 24 24"><path d="M5 12l5 5 9-11"/></svg><span data-i18n="opc.apply">aplicar opcodes</span></button>
+            <button class="mini" id="opcRevert" onclick="revertManualOpcodes(event)" style="display:none"><span data-i18n="opc.revert">voltar ao automático</span></button>
+          </div>
+          <div class="warnbox" id="opcResult" style="display:none"></div>
+          <div class="warnbox" data-i18n-html="opc.folder">Também funciona <b>arrastando o arquivo</b> para a pasta <b>opcodes</b> (dentro da pasta do Mitigus) e reabrindo o app.</div>
+        </div>
+      </div>
+
       <div class="accord" id="accRoute">
         <div class="accord-h" onclick="acc('accRoute')"><svg class="i lead" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 2.5 15 0 18M12 3c-2.5 2.5-2.5 15 0 18"/></svg><b data-i18n="route.title">Rota avançada (GPN / VPS)</b><span class="pill" id="routePill" data-i18n="route.off">desligada</span><svg class="i chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></div>
         <div class="accord-b">
@@ -565,6 +586,11 @@ const MSG={
   "reboot.title":"Windows restart needed","reboot.body":"Restart once so the console accepts the PC as gateway. If it already connects, ignore this.",
   "reboot.btn":"Restart","reboot.confirm":"Restart Windows now? Save your files first.","reboot.alert":"Windows will restart in 20 seconds.",
   "opcodes.title":"Outdated game opcodes","opcodes.body":"The game has updated and Mitigus does not recognize the console's connection.","opcodes.btn":"Update now",
+  "opc.title":"Game opcodes (advanced)","opc.auto":"automatic","opc.manual":"manual",
+  "opc.help":"<b>Only use this if the game updated and Mitigus hasn't.</b> It normally updates itself. If the community publishes the opcodes first, paste the file contents here (the XivAlexander <b>.json</b> or the Unscrambler <b>Constants&lt;patch&gt;.cs</b>) and click apply.",
+  "opc.ph":"paste the opcode file contents here…","opc.apply":"apply opcodes","opc.revert":"back to automatic",
+  "opc.folder":"It also works by <b>dragging the file</b> into the <b>opcodes</b> folder (inside the Mitigus folder) and reopening the app.",
+  "opc.empty":"Nothing to apply — paste the file contents first.","opc.reverted":"Back to the automatic source.",
   "status.mitigating":"Mitigating","status.paused":"Paused","status.serverLabel":"Server:",
   "game.waiting0":"waiting","game.active":"Game active","game.idle":"game idle","game.waiting":"waiting for game",
   "hero.label":"Animation lock · last cut","hero.chip":"−{n} ms per action",
@@ -617,6 +643,11 @@ const MSG={
   "reboot.title":"Falta reiniciar o Windows","reboot.body":"Reinicie 1x pro console aceitar o PC como gateway. Se já conecta, pode ignorar.",
   "reboot.btn":"Reiniciar","reboot.confirm":"Reiniciar o Windows agora? Salve seus arquivos antes.","reboot.alert":"O Windows vai reiniciar em 20 segundos.",
   "opcodes.title":"Opcodes desatualizados","opcodes.body":"O jogo atualizou e o Mitigus não reconhece a conexão do console.","opcodes.btn":"Atualizar agora",
+  "opc.title":"Opcodes do jogo (avançado)","opc.auto":"automático","opc.manual":"manual",
+  "opc.help":"<b>Só use se o jogo atualizou e o Mitigus ainda não.</b> Normalmente ele se atualiza sozinho. Se a comunidade publicar os opcodes antes, cole aqui o conteúdo do arquivo (o <b>.json</b> do XivAlexander ou o <b>Constants&lt;patch&gt;.cs</b> do Unscrambler) e clique em aplicar.",
+  "opc.ph":"cole aqui o conteúdo do arquivo de opcodes…","opc.apply":"aplicar opcodes","opc.revert":"voltar ao automático",
+  "opc.folder":"Também funciona <b>arrastando o arquivo</b> para a pasta <b>opcodes</b> (dentro da pasta do Mitigus) e reabrindo o app.",
+  "opc.empty":"Nada para aplicar — cole o conteúdo do arquivo primeiro.","opc.reverted":"Voltou para a fonte automática.",
   "status.mitigating":"Mitigando","status.paused":"Pausado","status.serverLabel":"Servidor:",
   "game.waiting0":"aguardando","game.active":"Jogo ativo","game.idle":"jogo ocioso","game.waiting":"aguardando jogo",
   "hero.label":"Trava de animação · último corte","hero.chip":"−{n} ms por ação",
@@ -669,6 +700,11 @@ const MSG={
   "reboot.title":"Falta reiniciar Windows","reboot.body":"Reinicia una vez para que la consola acepte el PC como puerta de enlace. Si ya conecta, ignóralo.",
   "reboot.btn":"Reiniciar","reboot.confirm":"¿Reiniciar Windows ahora? Guarda tus archivos antes.","reboot.alert":"Windows se reiniciará en 20 segundos.",
   "opcodes.title":"Opcodes desactualizados","opcodes.body":"El juego se ha actualizado y Mitigus no reconoce la conexión de la consola.","opcodes.btn":"Actualizar ahora",
+  "opc.title":"Opcodes del juego (avanzado)","opc.auto":"automático","opc.manual":"manual",
+  "opc.help":"<b>Úsalo solo si el juego se actualizó y Mitigus todavía no.</b> Normalmente se actualiza solo. Si la comunidad publica los opcodes antes, pega aquí el contenido del archivo (el <b>.json</b> de XivAlexander o el <b>Constants&lt;patch&gt;.cs</b> de Unscrambler) y pulsa aplicar.",
+  "opc.ph":"pega aquí el contenido del archivo de opcodes…","opc.apply":"aplicar opcodes","opc.revert":"volver al automático",
+  "opc.folder":"También funciona <b>arrastrando el archivo</b> a la carpeta <b>opcodes</b> (dentro de la carpeta de Mitigus) y reabriendo la app.",
+  "opc.empty":"Nada que aplicar — pega primero el contenido del archivo.","opc.reverted":"Volvió a la fuente automática.",
   "status.mitigating":"Mitigando","status.paused":"Pausado","status.serverLabel":"Servidor:",
   "game.waiting0":"esperando","game.active":"Juego activo","game.idle":"juego inactivo","game.waiting":"esperando el juego",
   "hero.label":"Bloqueo de animación · último recorte","hero.chip":"−{n} ms por acción",
@@ -776,6 +812,26 @@ async function updateOpcodes(e){e.stopPropagation();const b=e.currentTarget,old=
 async function updateOpcodesBanner(e){const b=e.currentTarget;b.textContent="…";b.disabled=true;
   let ok=false;try{const r=await api("/api/opcodes/update",{method:"POST"});ok=r.ok!==false}catch(_){ok=false}
   b.textContent=ok?"✓":tr("btn.error");setTimeout(()=>{b.textContent=tr("opcodes.btn");b.disabled=false;refresh()},1300)}
+async function postManualOpcodes(body){                            /* texto cru; "auto" = voltar */
+  try{const r=await fetch("/api/opcodes/manual",{method:"POST",headers:{"Content-Type":"text/plain"},body:body});
+    return await r.json()}catch(e){return {ok:false,error:String(e)}}}
+function showOpcResult(res){const box=$("opcResult");
+  box.style.display="block";
+  box.innerHTML=(res.ok?"<b>✓</b> ":"<b>✗</b> ")+(res.detail||res.error||"");
+  box.style.borderColor=res.ok?"":"var(--red,#e5484d)"}
+async function applyManualOpcodes(e){e.stopPropagation();
+  const txt=$("opcManual").value.trim();
+  if(!txt){showOpcResult({ok:false,detail:tr("opc.empty")});return}
+  const b=e.currentTarget,old=b.innerHTML;b.textContent="…";b.disabled=true;
+  const res=await postManualOpcodes(txt);
+  showOpcResult(res);
+  if(res.ok)$("opcManual").value="";
+  b.innerHTML=old;b.disabled=false;refresh()}
+async function revertManualOpcodes(e){e.stopPropagation();
+  const b=e.currentTarget;b.disabled=true;
+  const res=await postManualOpcodes("auto");
+  showOpcResult({ok:res.ok!==false,detail:tr("opc.reverted")});
+  b.disabled=false;refresh()}
 function copyIp(e){e.stopPropagation();const ip=$("pcip2").textContent;
   if(ip&&ip!=="—"){navigator.clipboard&&navigator.clipboard.writeText(ip);const b=e.currentTarget,o=b.innerHTML;b.textContent=tr("btn.copied");setTimeout(()=>b.innerHTML=o,1200)}}
 function copyPhone(e){const u=$("phoneUrl").textContent;
@@ -822,6 +878,10 @@ async function refresh(){
     // sozinho deixava o painel verde mesmo com opcodes velhos pós-patch.
     const opcodesBad=info.opcodes_count>0 && s.flows>0 && (info.opcodes_matched===false || info.opcodes_stale===true);
     $("opcodesBanner").classList.toggle("show",opcodesBad);
+    /* fonte dos opcodes: automática (padrão) ou manual (aplicada pelo usuário) */
+    const manual=info.opcodes_src==="manual";
+    if($("opcPill"))$("opcPill").textContent=tr(manual?"opc.manual":"opc.auto");
+    if($("opcRevert"))$("opcRevert").style.display=manual?"":"none";
     const warnTab=needReboot||info.oodle_missing||opcodesBad;
     $("tabConfig").classList.toggle("warn",warnTab);
 

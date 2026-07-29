@@ -136,6 +136,47 @@ class PanelServerTest(unittest.TestCase):
         finally:
             srv.stop()
 
+    def test_opcodes_manual_posts_body_to_handler(self):
+        """O painel manda o texto colado (JSON ou .cs) no CORPO do POST."""
+        seen = {}
+
+        def upd(manual_text=None):
+            seen["text"] = manual_text
+            return {"ok": True, "kind": "weave", "detail": "aplicado"}
+
+        srv = PanelServer(ControlHub(), host="127.0.0.1", port=0, on_update_opcodes=upd)
+        port = srv.start()
+        try:
+            payload = '{"S2C_ActionEffect01": "0x0201"}'
+            req = urllib.request.Request(f"http://127.0.0.1:{port}/api/opcodes/manual",
+                                        data=payload.encode("utf-8"), method="POST")
+            with urllib.request.urlopen(req, timeout=3) as r:
+                d = json.loads(r.read())
+            self.assertTrue(d["ok"])
+            self.assertEqual(d["kind"], "weave")
+            self.assertEqual(seen["text"], payload)      # chegou inteiro
+        finally:
+            srv.stop()
+
+    def test_opcodes_manual_rejects_empty_body(self):
+        srv = PanelServer(ControlHub(), host="127.0.0.1", port=0,
+                          on_update_opcodes=lambda manual_text=None: {"ok": True})
+        port = srv.start()
+        try:
+            req = urllib.request.Request(f"http://127.0.0.1:{port}/api/opcodes/manual",
+                                        data=b"", method="POST")
+            with urllib.request.urlopen(req, timeout=3) as r:
+                d = json.loads(r.read())
+            self.assertFalse(d["ok"])
+        finally:
+            srv.stop()
+
+    def test_opcodes_manual_without_handler_does_not_crash(self):
+        req = urllib.request.Request(self._base() + "/api/opcodes/manual",
+                                     data=b"xxx", method="POST")
+        with urllib.request.urlopen(req, timeout=3) as r:
+            self.assertFalse(json.loads(r.read())["ok"])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -198,8 +198,30 @@ def _build_mitigation_factory(exe, opcodes_json, extra_delay, log, hub=None, cap
 
     import weakref
     print("  carregando definições de opcode...")
+
+    def _load_defs(force=False):
+        """Opcodes de weave, em ordem de precedência:
+        1) --opcodes-json (explícito na linha de comando);
+        2) opcodes-manual.json na pasta do app — o que o USUÁRIO aplicou a mão
+           (painel/pasta opcodes\\). Não é sobrescrito pelo auto-update;
+        3) cache/download automático (fonte XivAlexander)."""
+        if opcodes_json:
+            return load_definitions(json_path=opcodes_json), "cli"
+        try:
+            from mitigus.update import manual_weave_path
+            mp = manual_weave_path()
+            if os.path.exists(mp):
+                return load_definitions(json_path=mp), "manual"
+        except Exception:
+            pass
+        return load_definitions(force_update=force), "auto"
+
+    defs0, src0 = _load_defs()
+    if src0 == "manual":
+        print("  usando opcodes MANUAIS (opcodes-manual.json) — apague o arquivo "
+              "para voltar ao automático")
     # "active": mitigators vivos (WeakSet) p/ recarregar opcodes em runtime no refresh.
-    state = {"defs": load_definitions(json_path=opcodes_json), "active": weakref.WeakSet()}
+    state = {"defs": defs0, "active": weakref.WeakSet(), "src": src0}
     module = None
     if exe:
         from mitigus.oodle.oodle import OodleModule
@@ -209,15 +231,34 @@ def _build_mitigation_factory(exe, opcodes_json, extra_delay, log, hub=None, cap
 
     def _publish():
         if hub is not None:
-            hub.set_info(opcodes_count=len(state["defs"]), opcodes_date=_opcode_date(state["defs"]))
+            hub.set_info(opcodes_count=len(state["defs"]),
+                         opcodes_date=_opcode_date(state["defs"]),
+                         opcodes_src=state.get("src"))
 
     if hub is not None:
         hub.set_info(oodle_loaded=module is not None)
     _publish()
 
-    def refresh():
+    def refresh(manual_text=None):
+        """Sem argumento: atualiza da fonte automática. Com `manual_text`: aplica
+        os opcodes que o USUÁRIO colou/soltou (comunidade) e recarrega."""
+        if manual_text is not None:
+            from mitigus.update import apply_manual, manual_weave_path
+            if manual_text.strip().lower() in ("", "auto"):
+                try:                       # volta ao automático
+                    os.remove(manual_weave_path())
+                    log("opcodes: voltando à fonte automática")
+                except OSError:
+                    pass
+            else:
+                res = apply_manual(manual_text, log)
+                if not res.get("ok"):
+                    return res
+                if res.get("kind") != "weave":
+                    _publish()
+                    return res        # deob: vale no próximo boot
         try:
-            state["defs"] = load_definitions(json_path=opcodes_json, force_update=True)
+            state["defs"], state["src"] = _load_defs(force=(manual_text is None))
         except Exception as e:
             log(f"falha ao atualizar opcodes: {e}")
             return {"ok": False, "error": str(e)}
@@ -282,6 +323,15 @@ def _run_full(ps5_ip, pc_ip, port, mitigate, exe, extra_delay, opcodes_json, pan
                 return 0
         except Exception:
             pass
+
+    # Opcodes que o USUÁRIO soltou em <pasta do app>\opcodes\ (.json do
+    # XivAlexander ou Constants<patch>.cs do perchbirdd). Antes de carregar as
+    # definições, pra já valer nesta sessão (o do weave; o do deob no próximo boot).
+    try:
+        from mitigus.update import apply_drop_folder
+        apply_drop_folder(lambda m: print(f"  [opcodes] {m}"))
+    except Exception:
+        pass
 
     if not is_admin():
         print("! Modo real exige Administrador (WinDivert carrega driver de kernel).")

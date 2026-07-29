@@ -76,40 +76,9 @@ def _warn_new_algorithm() -> None:
               f"antes de confiar nos dados novos.")
 
 
-# ---- parse do Constants<patch>.cs -----------------------------------------
-def _parse_constants_cs(text: str) -> dict | None:
-    def one(pattern, cast=str):
-        m = re.search(pattern, text)
-        return cast(m.group(1)) if m else None
-
-    def arr(name):
-        m = re.search(rf"{name}\s*=\s*\[([^\]]+)\]", text)
-        if not m:
-            return None
-        return [int(x.strip(), 0) for x in m.group(1).split(",") if x.strip()]
-
-    ver = one(r'GameVersion\s*=\s*"([^"]+)"')
-    if not ver:
-        return None
-    ops = {}
-    block = re.search(r"ObfuscatedOpcodes\s*=\s*new Dictionary<string,\s*int>\s*\{(.+?)\n\s*\}",
-                      text, re.S)
-    if block:
-        for name, val in re.findall(r'\{\s*"([A-Za-z0-9_]+)"\s*,\s*(0[xX][0-9a-fA-F]+|\d+)\s*\}',
-                                    block.group(1)):
-            ops[name] = int(val, 0)
-    return {
-        "game_version": ver,
-        "obfuscation_enabled_mode": one(r"ObfuscationEnabledMode\s*=\s*(\d+)", int),
-        "table_radixes": arr("TableRadixes"),
-        "table_max": arr("TableMax"),
-        "init_zone_opcode": one(r"InitZoneOpcode\s*=\s*(0[xX][0-9a-fA-F]+|\d+)",
-                                lambda s: int(s, 0)),
-        "unknown_obfuscation_init_opcode": one(
-            r"UnknownObfuscationInitOpcode\s*=\s*(0[xX][0-9a-fA-F]+|\d+)",
-            lambda s: int(s, 0)),
-        "obfuscated_opcodes": ops,
-    }
+# O parser do Constants<patch>.cs vive em mitigus/update/manual.py (o app tambem
+# usa, pro usuario poder colar o .cs no painel) — uma fonte so.
+from mitigus.update.manual import parse_constants_cs as _parse_constants_cs  # noqa: E402
 
 
 def _find_constants_for(version: str) -> dict | None:

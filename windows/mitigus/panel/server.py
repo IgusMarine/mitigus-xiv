@@ -163,6 +163,26 @@ class PanelServer:
                             self._json(on_update() or {"ok": True})
                         except Exception as e:
                             self._json({"ok": False, "error": str(e)})
+                elif parsed.path == "/api/opcodes/manual":
+                    # o usuário colou opcodes da comunidade (JSON do XivAlexander
+                    # ou Constants<patch>.cs do perchbirdd). Corpo = texto cru.
+                    if on_update is None:
+                        self._json({"ok": False, "error": "indisponível neste modo"})
+                        return
+                    try:
+                        n = int(self.headers.get("Content-Length") or 0)
+                    except ValueError:
+                        n = 0
+                    if n <= 0 or n > 4 * 1024 * 1024:
+                        self._json({"ok": False, "error": "conteúdo vazio ou muito grande"})
+                        return
+                    try:
+                        body = self.rfile.read(n).decode("utf-8", "replace")
+                        self._json(on_update(manual_text=body) or {"ok": True})
+                    except TypeError:
+                        self._json({"ok": False, "error": "modo sem suporte a manual"})
+                    except Exception as e:
+                        self._json({"ok": False, "error": str(e)})
                 else:
                     self._json({"error": "not found"}, 404)
 
